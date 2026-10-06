@@ -1,0 +1,1656 @@
+[
+  {
+    "name": "Abs",
+    "description": "Returns the absolute value (unsigned magnitude) of the decimal number \u0027n\u0027.",
+    "type": "Decimal",
+    "inputParameters": [
+      {
+        "name": "n",
+        "description": "The number to extract the absolute value from.",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "Mod",
+    "description": "Returns the remainder of decimal division of \u0027n\u0027 by \u0027m\u0027.",
+    "type": "Decimal",
+    "inputParameters": [
+      {
+        "name": "n",
+        "description": "The dividend in the modulo operation.",
+        "type": "Decimal"
+      },
+      {
+        "name": "m",
+        "description": "The divisor in the modulo operation.",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "Power",
+    "description": "Returns \u0027n\u0027 raised to the power of \u0027m\u0027.",
+    "type": "Decimal",
+    "inputParameters": [
+      {
+        "name": "n",
+        "description": "The base value.",
+        "type": "Decimal"
+      },
+      {
+        "name": "m",
+        "description": "The exponent value.",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "Round",
+    "description": "Returns the Decimal number \u0027n\u0027 rounded to a specific number of \u0027fractional digits\u0027.\nThe round method applied depends on where the function is used:\n- In expressions in client-side and server-side logic, applies the method round half to even (rounds to the nearest integer, 0.5 rounds to the nearest even integer).\n- In aggregates, applies the method round half away from 0 (rounds to the nearest integer, 0.5 rounds the number further away from 0).",
+    "type": "Decimal",
+    "inputParameters": [
+      {
+        "name": "n",
+        "description": "The Decimal number to round",
+        "type": "Decimal"
+      },
+      {
+        "name": "fractionalDigits",
+        "description": "Use it to specify the number of fractional digits that n has to be rounded to. The default value is 0. Note: In aggregates this parameter is not specified.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "Sqrt",
+    "description": "Returns the square root of the Decimal number \u0027n\u0027.",
+    "type": "Decimal",
+    "inputParameters": [
+      {
+        "name": "n",
+        "description": "The number to calculate the square root from.",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "Trunc",
+    "description": "Returns the Decimal number \u0027n\u0027 truncated to integer removing the decimal part of \u0027n\u0027.",
+    "type": "Decimal",
+    "inputParameters": [
+      {
+        "name": "n",
+        "description": "The number to truncate.",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "Max",
+    "description": "Returns the largest number of \u0027n\u0027 and \u0027m\u0027.",
+    "type": "Decimal",
+    "inputParameters": [
+      {
+        "name": "n",
+        "description": null,
+        "type": "Decimal"
+      },
+      {
+        "name": "m",
+        "description": null,
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "Min",
+    "description": "Returns the smallest number of \u0027n\u0027 and \u0027m\u0027.",
+    "type": "Decimal",
+    "inputParameters": [
+      {
+        "name": "n",
+        "description": null,
+        "type": "Decimal"
+      },
+      {
+        "name": "m",
+        "description": null,
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "Sign",
+    "description": "Returns -1 if \u0027n\u0027 is negative; 1 if \u0027n\u0027 is positive; 0 if \u0027n\u0027 is 0.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "n",
+        "description": "The number from which to calculate the sign value.",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "Chr",
+    "description": "Returns a single-character string corresponding to the \u0027c\u0027 character code.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "c",
+        "description": "The ASCII code value to be converted to a character.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "Concat",
+    "description": "Returns the concatenation of two Texts: \u0027t1\u0027 and \u0027t2\u0027.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "t1",
+        "description": "The first string.",
+        "type": "Text"
+      },
+      {
+        "name": "t2",
+        "description": "The string that will be appended to the first string in the output.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "EncodeHtml",
+    "description": "Replaces special characters in a string so that you can use it in HTML literals. Use this function when using unescaped expressions that contain content provided by end-users.\n\nWarning: Since this function only encodes strings that will be used in HTML literals, it does not protect you from cross-site scripting (XSS) or JavaScript injection vulnerabilities on its own. \u003Cb\u003EDo not\u003C/b\u003E use this function to encode text that might get executed as JavaScript code, only to encode HTML literals.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "text",
+        "description": "The Text to be encoded.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "EncodeJavaScript",
+    "description": "Replaces special characters in a string so that you can use it in JavaScript literals. Use this function when using unescaped expressions that contain content provided by end-users.\n\nWarning: Since this function only encodes strings that will be used in JavaScript literals, it does not protect you from cross-site scripting (XSS) or JavaScript injection vulnerabilities on its own. \u003Cb\u003EDo not\u003C/b\u003E use this function to encode text that might get executed as JavaScript code, only to encode JavaScript literals.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "text",
+        "description": "The Text to be encoded.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "EncodeSql",
+    "description": "Replaces special characters in a string literal so that you can use it in a SQL statement. Use this function when the Expand Inline property of a Query Parameter is enabled to escape content provided by end-users.\n\nWarning: Since this function only encodes string literals, it does not protect you from SQL injection vulnerabilities on its own. \u003Cb\u003EDo not\u003C/b\u003E use this function to encode text that might get executed as part of the SQL statement. Check the OutSystems Best Practices documentation for more information on building dynamic SQL statements the right way.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "text",
+        "description": "The Text to be encoded.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "EncodeUrl",
+    "description": "Replaces all non-alphanumeric characters in a string, i.e. characters outside of the [0-9a-zA-Z] range, so that you can safely use it in URL parameter values. Use this function to build URLs in your application that may contain content provided by end-users, e.g. when dynamically building URLs to an external site.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "text",
+        "description": "The Text to be encoded.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "Index",
+    "description": "Returns the zero-based position in Text \u0027t\u0027 where \u0027search\u0027 Text can be found. Returns -1 if \u0027search\u0027 is not found or if \u0027search\u0027 is empty.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The Text where the search Text can be found.",
+        "type": "Text"
+      },
+      {
+        "name": "search",
+        "description": "The Text string to be found.",
+        "type": "Text"
+      },
+      {
+        "name": "startIndex",
+        "description": "Indicates the (zero-based) index where the search starts. In case of searching from the end to the start, a startIndex different from 0 (zero) indicates the end of the text. The default value is 0 (zero). When used in Aggregates this parameter is not present.",
+        "type": "Integer"
+      },
+      {
+        "name": "searchFromEnd",
+        "description": "Indicates the direction of the search. In case of searching from the end to the start, a startIndex different from 0 (zero) indicates the end of the text. The default value is False. When used in Aggregates this parameter is not present.",
+        "type": "Boolean"
+      },
+      {
+        "name": "ignoreCase",
+        "description": "Set True to treat lowercase and uppercase characters as equal, ignoring the casing of the Text inputs \u0027t\u0027 and \u0027search\u0027. The default value is False. When used in Aggregates this parameter is not present.",
+        "type": "Boolean"
+      }
+    ]
+  },
+  {
+    "name": "Length",
+    "description": "Returns the number of characters in Text \u0027t\u0027.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The Text to calculate the length of.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "NewLine",
+    "description": "Returns a string containing the New Line (Return) character.",
+    "type": "Text"
+  },
+  {
+    "name": "Replace",
+    "description": "Returns Text \u0027t\u0027 after replacing all Text occurrences of \u0027search\u0027 with \u0027replace\u0027.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The Text where the search and replace operation is performed.",
+        "type": "Text"
+      },
+      {
+        "name": "search",
+        "description": "The Text to be replaced.",
+        "type": "Text"
+      },
+      {
+        "name": "replace",
+        "description": "The Text that replaces the search Text.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "Substr",
+    "description": "Returns a sub-string of \u0027t\u0027 beginning at \u0027start\u0027 zero-based position and with \u0027length\u0027 characters.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The Text where the operation is performed.",
+        "type": "Text"
+      },
+      {
+        "name": "start",
+        "description": "The zero-based position to start the Text extraction from.",
+        "type": "Integer"
+      },
+      {
+        "name": "length",
+        "description": "The number of characters to include in the output Text.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "ToLower",
+    "description": "Converts Text \u0027t\u0027 to the equivalent lowercase text.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "Thet Text to transform into lowercase.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "ToUpper",
+    "description": "Converts Text \u0027t\u0027 to the equivalent uppercase text.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The Text to transform into uppercase.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "Trim",
+    "description": "Removes all leading and trailing space characters (\u0027 \u0027) from Text \u0027t\u0027.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The Text to trim.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TrimEnd",
+    "description": "Removes all trailing space characters (\u0027 \u0027) from Text \u0027t\u0027.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The Text to remove trailing space characters from.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TrimStart",
+    "description": "Removes all leading space characters (\u0027 \u0027) from Text \u0027t\u0027.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The Text to remove leading space characters from.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "AddDays",
+    "description": "Adds \u0027n\u0027 days to \u0027dt\u0027 and returns a valid Date Time.",
+    "type": "DateTime",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to add days to.",
+        "type": "DateTime"
+      },
+      {
+        "name": "n",
+        "description": "The number of days to add.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "AddHours",
+    "description": "Adds \u0027n\u0027 hours to \u0027dt\u0027 and returns a valid Date Time.",
+    "type": "DateTime",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to add hours to.",
+        "type": "DateTime"
+      },
+      {
+        "name": "n",
+        "description": "The number of hours do add.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "AddMinutes",
+    "description": "Adds \u0027n\u0027 minutes to \u0027dt\u0027 and returns a valid Date Time.",
+    "type": "DateTime",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to add minutes to.",
+        "type": "DateTime"
+      },
+      {
+        "name": "n",
+        "description": "The number of minutes to add.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "AddMonths",
+    "description": "Adds \u0027n\u0027 months to \u0027dt\u0027 and returns a valid Date Time.",
+    "type": "DateTime",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to add months to.",
+        "type": "DateTime"
+      },
+      {
+        "name": "n",
+        "description": "The number of months to add.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "AddSeconds",
+    "description": "Adds \u0027n\u0027 seconds to \u0027dt\u0027 and returns a valid Date Time.",
+    "type": "DateTime",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to add seconds to.",
+        "type": "DateTime"
+      },
+      {
+        "name": "n",
+        "description": "The number of seconds to add.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "AddYears",
+    "description": "Adds \u0027n\u0027 years to \u0027dt\u0027 and returns a valid Date Time.",
+    "type": "DateTime",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to add years to.",
+        "type": "DateTime"
+      },
+      {
+        "name": "n",
+        "description": "The number of years to add.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "BuildDateTime",
+    "description": "Returns a Date Time made up of the Date \u0027d\u0027 and Time \u0027t\u0027.",
+    "type": "DateTime",
+    "inputParameters": [
+      {
+        "name": "d",
+        "description": "The Date to build the Date Time from.",
+        "type": "Date"
+      },
+      {
+        "name": "t",
+        "description": null,
+        "type": "Time"
+      }
+    ]
+  },
+  {
+    "name": "CurrDate",
+    "description": "In client-side calls, it returns the device date.\nIn server-side calls, it returns the current date (in UTC).\nIn query calls, it returns the current date (in UTC).",
+    "type": "Date"
+  },
+  {
+    "name": "CurrDateTime",
+    "description": "In client-side calls, it returns the device date and time.\nIn server-side calls, it returns the current date and time (in UTC).\nIn query calls, it returns the current date and time (in UTC).\n\nDate times sent from the device to the server is converted in UTC.\nConversely, date times from the server (UTC), are converted in the device to the device\u2019s timezone.",
+    "type": "DateTime"
+  },
+  {
+    "name": "CurrTime",
+    "description": "In client-side calls, it returns the device time.\nIn server-side calls, it returns the current time (in UTC).\nIn query calls, it returns the current time (in UTC).",
+    "type": "Time"
+  },
+  {
+    "name": "Day",
+    "description": "Returns the day of \u0027dt\u0027.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to calculate the day from.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "DayOfWeek",
+    "description": "Returns the week day of \u0027dt\u0027, ranging from 0 (Sunday) to 6 (Saturday).",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to calculate the day of the week from.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "DiffDays",
+    "description": "Returns the difference in days between \u0027dt1\u0027 and \u0027dt2\u0027; i.e. how many days have passed between these two dates:\n\n- Returns a positive number if \u0027dt1\u0027 is smaller than \u0027dt2\u0027;\n- Returns a negative number if \u0027dt1\u0027 is bigger than \u0027dt2\u0027;\n- Returns 0 if the two dates are equal.\n\nThe Time component you provide in the parameters is ignored. The DiffDays function receives two Date Time parameters, and then replaces the Time component with 00:00:00. It calculates the elapsed time in milliseconds from the first date at 00:00:00 to the second date at 00:00:00, and then converts the difference in milliseconds into days.\n\nDaylight Saving Time (DST) is ignored. The time zone considered for evaluating this function is always the UTC, regardless of the regional settings of the end-user.\n\nThe maximum supported value is (2^31)-1 days. This corresponds to approximately 5879489.8 years. If DiffDays(dt1, dt2) is bigger than (2^31)-1, you will get an unexpected value.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt1",
+        "description": "The first Date Time.",
+        "type": "DateTime"
+      },
+      {
+        "name": "dt2",
+        "description": "The second Date Time.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "DiffHours",
+    "description": "Returns the difference in hours between \u0027dt1\u0027 and \u0027dt2\u0027; i.e. how many hours have passed between these two dates:\n\n- Returns a positive number if \u0027dt1\u0027 is smaller than \u0027dt2\u0027;\n- Returns a negative number if \u0027dt1\u0027 is bigger than \u0027dt2\u0027.\n- Returns 0 if the two dates are equal.\n\nDaylight Saving Time (DST) is ignored. The time zone considered for evaluating this function is always the UTC, regardless of the regional settings of the end-user.\n\nThe maximum supported value is (2^31)-1 hours. This corresponds to approximately 244978.74 years. If DiffHours(dt1, dt2) is bigger than (2^31)-1, you will get an unexpected value.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt1",
+        "description": "The first Date Time.",
+        "type": "DateTime"
+      },
+      {
+        "name": "dt2",
+        "description": "The second Date Time.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "DiffMinutes",
+    "description": "Returns the difference in minutes between \u0027dt1\u0027 and \u0027dt2\u0027; i.e. how many minutes have passed between these two dates:\n\n- Returns a positive number if \u0027dt1\u0027 is smaller than \u0027dt2\u0027;\n- Returns a negative number if \u0027dt1\u0027 is bigger than \u0027dt2\u0027.\n- Returns 0 if the two dates are equal.\n\nDaylight Saving Time (DST) is ignored. The time zone considered for evaluating this function is always the UTC, regardless of the regional settings of the end-user.\n\nThe maximum supported value is (2^31)-1 minutes. This corresponds to approximately 4085.78 years. If DiffMinutes(dt1, dt2) is bigger than (2^31)-1, you will get an unexpected value.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt1",
+        "description": "The first Date Time.",
+        "type": "DateTime"
+      },
+      {
+        "name": "dt2",
+        "description": "The second Date Time.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "DiffSeconds",
+    "description": "Returns the difference in seconds between \u0027dt1\u0027 and \u0027dt2\u0027; i.e. how many seconds have passed between these two dates:\n\n- Returns a positive number if \u0027dt1\u0027 is smaller than \u0027dt2\u0027;\n- Returns a negative number if \u0027dt1\u0027 is bigger than \u0027dt2\u0027.\n- Returns 0 if the two dates are equal.\n\nDaylight Saving Time (DST) is ignored. The time zone considered for evaluating this function is always the UTC, regardless of the regional settings of the end-user.\n\nThe maximum supported value is (2^31)-1 seconds. This corresponds to approximately 68.10 years. If DiffSeconds(dt1, dt2) is bigger than (2^31)-1, you will get an unexpected value.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt1",
+        "description": "The first Date Time.",
+        "type": "DateTime"
+      },
+      {
+        "name": "dt2",
+        "description": "The second Date Time.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "Hour",
+    "description": "Returns the hour of \u0027dt\u0027.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to extract the hours from.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "Minute",
+    "description": "Returns the minute of \u0027dt\u0027.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to extract the minutes from.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "Month",
+    "description": "Returns the month of \u0027dt\u0027.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to extract the month from.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "NewDate",
+    "description": "Returns a Date made up of year \u0027y\u0027, month \u0027m\u0027 and day \u0027d\u0027.",
+    "type": "Date",
+    "inputParameters": [
+      {
+        "name": "y",
+        "description": "The year of the Date.",
+        "type": "Integer"
+      },
+      {
+        "name": "m",
+        "description": "The month of the Date.",
+        "type": "Integer"
+      },
+      {
+        "name": "d",
+        "description": "The day of the Date.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "NewDateTime",
+    "description": "Returns a Date Time made up of year \u0027y\u0027, month \u0027mo\u0027, day \u0027d\u0027, hour \u0027h\u0027, minute \u0027mi\u0027 and second \u0027s\u0027.",
+    "type": "DateTime",
+    "inputParameters": [
+      {
+        "name": "y",
+        "description": "The year of the Date Time.",
+        "type": "Integer"
+      },
+      {
+        "name": "mo",
+        "description": "The month of the Date Time.",
+        "type": "Integer"
+      },
+      {
+        "name": "d",
+        "description": "The day of the Date Time.",
+        "type": "Integer"
+      },
+      {
+        "name": "h",
+        "description": "The hours of the Date Time.",
+        "type": "Integer"
+      },
+      {
+        "name": "mi",
+        "description": "The minutes of the Date Time.",
+        "type": "Integer"
+      },
+      {
+        "name": "s",
+        "description": "The seconds of the Date Time.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "NewTime",
+    "description": "Returns a Time made up of hour \u0027h\u0027, minute \u0027m\u0027 and second \u0027s\u0027.",
+    "type": "Time",
+    "inputParameters": [
+      {
+        "name": "h",
+        "description": "The hours of the Time.",
+        "type": "Integer"
+      },
+      {
+        "name": "m",
+        "description": "The minutes of the Time.",
+        "type": "Integer"
+      },
+      {
+        "name": "s",
+        "description": "The seconds of the Time.",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "Second",
+    "description": "Returns the seconds of \u0027dt\u0027.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to extract the seconds from.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "Year",
+    "description": "Returns the year of \u0027dt\u0027.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The Date Time to extract the year from.",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "BooleanToInteger",
+    "description": "Converts Boolean \u0027b\u0027 to an Integer value, either 1 if \u0027b\u0027 is True or 0 if \u0027b\u0027 is False.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "b",
+        "description": "The value to be converted",
+        "type": "Boolean"
+      }
+    ]
+  },
+  {
+    "name": "BooleanToText",
+    "description": "Converts Boolean \u0027b\u0027 to a Text value, either \u0022True\u0022 or \u0022False\u0022.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "b",
+        "description": "The value to be converted",
+        "type": "Boolean"
+      }
+    ]
+  },
+  {
+    "name": "DateTimeToDate",
+    "description": "Converts Date Time \u0027dt\u0027 to a Date value dropping the Time component.",
+    "type": "Date",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The value to be converted",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "DateTimeToText",
+    "description": "Converts Date Time \u0027dt\u0027 to a Text value in the format specified in the organization configuration (by default, \u0022yyyy-MM-dd HH:mm:ss\u0022).",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The value to be converted",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "DateTimeToTime",
+    "description": "Converts Date Time \u0027dt\u0027 to a Time value dropping the Date component.",
+    "type": "Time",
+    "inputParameters": [
+      {
+        "name": "dt",
+        "description": "The value to be converted",
+        "type": "DateTime"
+      }
+    ]
+  },
+  {
+    "name": "DateToDateTime",
+    "description": "Converts Date \u0027d\u0027 to a Date Time value, adding the Time component (#00:00:00#).",
+    "type": "DateTime",
+    "inputParameters": [
+      {
+        "name": "d",
+        "description": "The value to be converted",
+        "type": "Date"
+      }
+    ]
+  },
+  {
+    "name": "DateToText",
+    "description": "Converts Date \u0027d\u0027 to a Text value in the format specified in the organization configuration (by default, \u0022yyyy-MM-dd\u0022).",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "d",
+        "description": "The value to be converted",
+        "type": "Date"
+      }
+    ]
+  },
+  {
+    "name": "DecimalToBoolean",
+    "description": "Converts Decimal \u0027d\u0027 to a Boolean value. Decimal value of 0.0 is False. Any other value is True.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "d",
+        "description": "The value to be converted",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "DecimalToInteger",
+    "description": "Converts Decimal \u0027d\u0027 to an Integer value.\nIn client-side and server-side logic, the function rounds the input using the round half to even method. In Aggregate expressions the function truncates to the integer part of the input.\nTo check if the conversion is possible you can use the DecimalToIntegerValidate function.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "d",
+        "description": "The value to be converted",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "DecimalToIntegerValidate",
+    "description": "Returns true if Decimal \u0027d\u0027 can be converted to an Integer value.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "d",
+        "description": "The value to be converted",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "DecimalToLongInteger",
+    "description": "Converts Decimal \u0027d\u0027 to a Long Integer value.\nIn client-side and server-side logic, the function rounds the input using the round half to even method. In Aggregate expressions the function truncates to the integer part of the input.\nTo check if the conversion is possible you can use the DecimalToLongIntegerValidate function.",
+    "type": "LongInteger",
+    "inputParameters": [
+      {
+        "name": "d",
+        "description": "The value to be converted",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "DecimalToLongIntegerValidate",
+    "description": "Returns true if Decimal \u0027d\u0027 can be converted to a Long Integer value.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "d",
+        "description": "The value to be converted",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "DecimalToText",
+    "description": "Converts Decimal \u0027d\u0027 to a Text value.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "d",
+        "description": "The value to be converted",
+        "type": "Decimal"
+      }
+    ]
+  },
+  {
+    "name": "LongIntegerToInteger",
+    "description": "Converts Long Integer \u0027l\u0027 to an Integer value. If \u0027l\u0027 is outside the boundaries of the Integer values, the function will return the Integer default value. To check if the conversion is possible you can use the LongIntegerToIntegerValidate function.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "l",
+        "description": "The value to be converted",
+        "type": "LongInteger"
+      }
+    ]
+  },
+  {
+    "name": "LongIntegerToIntegerValidate",
+    "description": "Returns true if Long Integer \u0027l\u0027 can be converted to an Integer value.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "l",
+        "description": "The value to be converted",
+        "type": "LongInteger"
+      }
+    ]
+  },
+  {
+    "name": "LongIntegerToIdentifier",
+    "description": "Converts Long Integer \u0027l\u0027 to a Long Integer Identifier.",
+    "type": "LongIntegerIdentifier",
+    "inputParameters": [
+      {
+        "name": "l",
+        "description": "The value to be converted",
+        "type": "LongInteger"
+      }
+    ]
+  },
+  {
+    "name": "LongIntegerToText",
+    "description": "Converts Long Integer \u0027l\u0027 to a Text value.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "l",
+        "description": "The value to be converted",
+        "type": "LongInteger"
+      }
+    ]
+  },
+  {
+    "name": "IdentifierToInteger",
+    "description": "Converts Identifier \u0027Id\u0027 to an Integer value.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "id",
+        "description": "The value to be converted",
+        "type": "IntegerIdentifier"
+      }
+    ]
+  },
+  {
+    "name": "IdentifierToLongInteger",
+    "description": "Converts Identifier \u0027Id\u0027 to a Long Integer value.",
+    "type": "LongInteger",
+    "inputParameters": [
+      {
+        "name": "id",
+        "description": "The value to be converted",
+        "type": "LongIntegerIdentifier"
+      }
+    ]
+  },
+  {
+    "name": "IdentifierToText",
+    "description": "Converts Identifier \u0027Id\u0027 to a Text value.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "id",
+        "description": "The value to be converted",
+        "type": "TextIdentifier"
+      }
+    ]
+  },
+  {
+    "name": "IntegerToBoolean",
+    "description": "Converts Integer \u0027i\u0027 to a Boolean value. Boolean value of 0 is False. Any other value is True.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "i",
+        "description": "The value to be converted",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "IntegerToDecimal",
+    "description": "Converts Integer \u0027i\u0027 to a Decimal value.",
+    "type": "Decimal",
+    "inputParameters": [
+      {
+        "name": "i",
+        "description": "The value to be converted",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "IntegerToIdentifier",
+    "description": "Converts Integer \u0027i\u0027 to an Integer Identifier.",
+    "type": "IntegerIdentifier",
+    "inputParameters": [
+      {
+        "name": "i",
+        "description": "The value to be converted",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "IntegerToText",
+    "description": "Converts Integer \u0027i\u0027 to a Text value.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "i",
+        "description": "The value to be converted",
+        "type": "Integer"
+      }
+    ]
+  },
+  {
+    "name": "NullDate",
+    "description": "Returns a null Date value.",
+    "type": "Date"
+  },
+  {
+    "name": "NullIdentifier",
+    "description": "Returns a null Identifier valid for Integer and Long Integer Identifiers.",
+    "type": "IntegerIdentifier"
+  },
+  {
+    "name": "NullObject",
+    "description": "Returns a null Object value.",
+    "type": "Object"
+  },
+  {
+    "name": "NullBinary",
+    "description": "Returns a null Binary Data value.",
+    "type": "BinaryData"
+  },
+  {
+    "name": "NullFile",
+    "description": "Returns a null File value.",
+    "type": "File"
+  },
+  {
+    "name": "NullTextIdentifier",
+    "description": "Returns a null Text Identifier.",
+    "type": "TextIdentifier"
+  },
+  {
+    "name": "TextToDate",
+    "description": "Converts Text \u0027t\u0027 to a Date value.\nIf \u0027t\u0027 can\u0027t be converted to a valid Date value, the function will return the Date default value. To check if the conversion is possible you can use the TextToDateValidate function.\nYou should check the limits of the Date data type. You should also ensure that the date you type in the argument complies with the default date format (yyyy-mm-dd, yyyy/mm/dd, and yyyy.mm.dd).",
+    "type": "Date",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToDateTime",
+    "description": "Converts Text \u0027t\u0027 to a Date Time value.\nIf \u0027t\u0027 can\u0027t be converted to a valid Date Time value, the function will return a Date Time default value. To check if the conversion is possible you can use the TextToDateTimeValidate function.\nYou should check the limits of the Date Time data type. You should also ensure that the Date Time you type in the argument complies with the default Date Time format (yyyy-mm-dd hh:mm:ss, yyyy/mm/dd hh:mm:ss, and yyyy.mm.dd hh:mm:ss).",
+    "type": "DateTime",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToDateTimeValidate",
+    "description": "Returns true if Text \u0027t\u0027 can be converted to a Date Time value.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToDateValidate",
+    "description": "Returns true if Text \u0027t\u0027 can be converted to a Date value.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToDecimal",
+    "description": "Converts Text \u0027t\u0027 to a Decimal value. The only allowed decimal separator is \u0022\u0022.\u0022\u0022 (period).\nIf \u0027t\u0027 is outside the boundaries of Decimal values, the function returns the Decimal default value. However, if you use TextToDecimal in an Aggregate and \u0027t\u0027 is outside the boundaries of Decimal values, the function throws an exception. To check if the conversion is possible, use the TextToDecimalValidate function.",
+    "type": "Decimal",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToDecimalValidate",
+    "description": "Returns true if Text \u0027t\u0027 can be converted to a Decimal value.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToIdentifier",
+    "description": "Converts Text \u0027t\u0027 to a Text Identifier.",
+    "type": "TextIdentifier",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToInteger",
+    "description": "Converts Text \u0027t\u0027 to an Integer value.\nIf \u0027t\u0027 is outside the boundaries of Integer values, the function returns the Integer default value. However, if you use TextToInteger in an Aggregate and \u0027t\u0027 is outside the boundaries of Integer values, the function throws an exception. To check if the conversion is possible, use the TextToIntegerValidate function.",
+    "type": "Integer",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToLongInteger",
+    "description": "Converts Text \u0027t\u0027 to a Long Integer value.\nIf \u0027t\u0027 is outside the boundaries of Long Integer values, the function returns the Long Integer default value. However, if you use TextToLongInteger in an Aggregate and \u0027t\u0027 is outside the boundaries of Long Integer values, the function throws an exception. To check if the conversion is possible, use the TextToLongIntegerValidate function.",
+    "type": "LongInteger",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToIntegerValidate",
+    "description": "Returns true if Text \u0027t\u0027 can be converted to an Integer value.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToLongIntegerValidate",
+    "description": "Returns true if Text \u0027t\u0027 can be converted to a Long Integer value.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToTime",
+    "description": "Converts Text \u0027t\u0027 to a Time value.\nIf \u0027t\u0027 can\u0027t be converted to a valid Time value, the function will return the Time default value. To check if the conversion is possible you can use the TextToTimeValidate function.\nYou should check the limits of the Time data type. You should also ensure that the Time you type in the argument complies with the Time format (hh:mm:ss).",
+    "type": "Time",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TextToTimeValidate",
+    "description": "Returns true if Text \u0027t\u0027 can be converted to a Time value.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "TimeToText",
+    "description": "Converts Time \u0027t\u0027 to a Text value in the format \u0022HH:mm:ss\u0022.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "t",
+        "description": "The value to be converted",
+        "type": "Time"
+      }
+    ]
+  },
+  {
+    "name": "ToObject",
+    "description": "Converts expression \u0027exp\u0027 to an Object value.",
+    "type": "Object",
+    "inputParameters": [
+      {
+        "name": "exp",
+        "description": "The element to be converted",
+        "type": "None"
+      }
+    ]
+  },
+  {
+    "name": "Size",
+    "description": "Returns the size in bytes of a File.",
+    "type": "LongInteger",
+    "inputParameters": [
+      {
+        "name": "file",
+        "description": "The File to obtain the size from.",
+        "type": "File"
+      }
+    ]
+  },
+  {
+    "name": "MIMEType",
+    "description": "Returns the MIME type of a File.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "file",
+        "description": "The File to obtain the MIMEType from.",
+        "type": "File"
+      }
+    ]
+  },
+  {
+    "name": "IsTemp",
+    "description": "Checks if a file is in temporary storage and hasn\u0027t been persisted. Returns true if the file is temporary.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "file",
+        "description": "The file you want to check for temporary storage status.",
+        "type": "File"
+      }
+    ]
+  },
+  {
+    "name": "IsOwnedByCurrentApp",
+    "description": "Checks if a file is owned by the current app. Returns true if the file is local to the app and false if it is a reference to a file in another app.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "file",
+        "description": "The file you want to check for storage ownership by the current app.",
+        "type": "File"
+      }
+    ]
+  },
+  {
+    "name": "FormatCurrency",
+    "description": "Builds a Text output of the specified Currency \u0027value\u0027, preceded by the currency \u0027symbol\u0027, using \u0027decimal_digits\u0027 after the decimal point. The decimal point is specified using \u0027decimal_separator\u0027, while the thousands can be separated with the \u0027group_separator\u0027.\n\nWhen rounding, the function behaves differently depending on where you use it:\n\n- In the \u003Cb\u003Eapplication server\u003C/b\u003E, it applies the method round half up (rounds to the nearest integer, 0.5 rounds up).\n- In \u003Cb\u003Eclient-side logic\u003C/b\u003E, it applies the method round half to even (rounds to the nearest integer, 0.5 rounds to the nearest even integer).",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "value",
+        "description": "The Currency value to be formatted.",
+        "type": "Currency"
+      },
+      {
+        "name": "symbol",
+        "description": "The currency symbol.",
+        "type": "Text"
+      },
+      {
+        "name": "decimal_digits",
+        "description": "The number of decimal digits.",
+        "type": "Integer"
+      },
+      {
+        "name": "decimal_separator",
+        "description": "The decimal separator symbol.",
+        "type": "Text"
+      },
+      {
+        "name": "group_separator",
+        "description": "The group separator symbol.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "FormatDecimal",
+    "description": "Builds a Text output of the specified Decimal \u0027value\u0027, using \u0027decimal_digits\u0027 after the decimal point. The decimal point is specified using \u0027decimal_separator\u0027, while the thousands can be separated with the \u0027group_separator\u0027.\n\nWhen rounding, the function behaves differently depending on where you use it:\n\n- In the \u003Cb\u003Eapplication server\u003C/b\u003E, it applies the method round half up (rounds to the nearest integer, 0.5 rounds up).\n- In \u003Cb\u003Eclient-side logic\u003C/b\u003E, it applies the method round half to even (rounds to the nearest integer, 0.5 rounds to the nearest even integer).",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "value",
+        "description": "The Decimal value to be formatted.",
+        "type": "Decimal"
+      },
+      {
+        "name": "decimal_digits",
+        "description": "The number of decimal digits.",
+        "type": "Integer"
+      },
+      {
+        "name": "decimal_separator",
+        "description": "The decimal separator symbol.",
+        "type": "Text"
+      },
+      {
+        "name": "group_separator",
+        "description": "The group separator symbol.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "FormatPercent",
+    "description": "Builds a Text output of the specified Decimal \u0027value\u0027, followed by \u0027%\u0027 using \u0027decimal_digits\u0027 after the decimal point. The decimal point is specified using \u0027decimal_separator\u0027.\n\nWhen rounding, the function behaves differently depending on where you use it:\n\n- In the \u003Cb\u003Eapplication server\u003C/b\u003E, it applies the method round half up (rounds to the nearest integer, 0.5 rounds up).\n- In \u003Cb\u003Eclient-side logic\u003C/b\u003E, it applies the method round half to even (rounds to the nearest integer, 0.5 rounds to the nearest even integer).",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "value",
+        "description": "The Decimal value to format as a percentage.",
+        "type": "Decimal"
+      },
+      {
+        "name": "decimal_digits",
+        "description": "The number of decimal digits to use.",
+        "type": "Integer"
+      },
+      {
+        "name": "decimal_separator",
+        "description": "The symbol to use as decimal separator.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "FormatPhoneNumber",
+    "description": "Builds a Text output of the specified phone number Text \u0027value\u0027, starting with the international separator \u0027int_separator\u0027, followed by the first \u0027int_code_digits\u0027 of \u0027value\u0027, then the \u0027area_separator\u0027, then the following \u0027area_code_digits\u0027 of \u0027value\u0027, then the \u0027phone_separator\u0027 and finally the following \u0027phone_digits\u0027 of \u0027value\u0027.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "value",
+        "description": "The phone number to be formatted.",
+        "type": "Text"
+      },
+      {
+        "name": "int_code_digits",
+        "description": "The number of digits composing the international code.",
+        "type": "Integer"
+      },
+      {
+        "name": "area_code_digits",
+        "description": "The number of digits composing the area code.",
+        "type": "Integer"
+      },
+      {
+        "name": "phone_digits",
+        "description": "The number of digitis composing the phone number without international or area codes.",
+        "type": "Integer"
+      },
+      {
+        "name": "int_separator",
+        "description": "The symbol for the international code.",
+        "type": "Text"
+      },
+      {
+        "name": "area_separator",
+        "description": "The symbol to use as separator between the international code and the area code.",
+        "type": "Text"
+      },
+      {
+        "name": "phone_separator",
+        "description": "The symbol to use as separator between the area code and the phone number.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "FormatText",
+    "description": "Builds a Text output of the specified Text \u0027value\u0027, by limiting it to the specified \u0027max_chars\u0027 count. If \u0027value\u0027 has less than the \u0027min_chars\u0027 characters limit, enough \u0027padding_char\u0027 characters are added to expand the length to that limit. In this case, \u0027left_padding\u0027 determines where the padding should be added.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "value",
+        "description": "The Text to be formatted.",
+        "type": "Text"
+      },
+      {
+        "name": "min_chars",
+        "description": "The minimum number of characters in the output.",
+        "type": "Integer"
+      },
+      {
+        "name": "max_chars",
+        "description": "The maximum number of characters in the output.",
+        "type": "Integer"
+      },
+      {
+        "name": "left_padding",
+        "description": "Indicates in which side the Text is padded.",
+        "type": "Boolean"
+      },
+      {
+        "name": "padding_char",
+        "description": "The character to use for padding the string to the minimum length.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "FormatDateTime",
+    "description": "Builds a Text output of the specified Date Time \u0027value\u0027 using the specified \u0027format\u0027. Formatting pattern can be any combination of the following:\nDay:\n- d: day without leading zero;\n- dd: day WITH leading zero;\n- ddd: abbreviated day name;\n- dddd: full day name;\nMonth:\n- M: month without leading zero;\n- MM: month WITH leading zero;\n- MMM: abbreviated month name;\n- MMMM: full month name;\nYear:\n- y: last one or two digits of the year;\n- yy: last two digits of the year;\n- yyyy: year;\nHour:\n- h: hour from 0 to 12 without leading zero;\n- hh: hour from 0 to 12 WITH leading zero;\n- H: hour from 0 to 24 without leading zero;\n- HH: hour from 0 to 24 WITH leading zero;\nMinute:\n- m: minutes without leading zero;\n- mm: minutes WITH leading zero;\nSecond:\n- s: seconds without leading zero;\n- ss: seconds WITH leading zero;\nAM Designator:\n- t: first letter of AM or PM;\n- tt: AM or PM.\n\nIf you want to output any of these characters then precede it with \u0027\\\u0027.\nChanging the organization date format does not change the way the FormatDateTime function formats the dates.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "value",
+        "description": "The Date Time to be formatted.",
+        "type": "DateTime"
+      },
+      {
+        "name": "format",
+        "description": "The formatting pattern.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "EmailAddressCreate",
+    "description": "Returns a full email address string containing the display name (usually it\u0027s the name of the email address owner) and the email address itself. The resulting full email address may then be used in the Send Email element (action flows) or in the Send Email activity (process flows).\nTo build a list of email addresses use the EmailAddressesConcatenate built-in function.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "name",
+        "description": "The display name of the email address which usually is the name of the email address owner as, for example, \u0022John Smith\u0022.",
+        "type": "Text"
+      },
+      {
+        "name": "email",
+        "description": "The email address itself, for example, john.smith@worldmail.com.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "EmailAddressesConcatenate",
+    "description": "Returns the concatenation of email addresses, or list of email addresses, into a a new list of email addresses separated by a comma (\u0027,\u0027). The resulting list may then be used in the Send Email element (action flows) or in the Send Email activity (process flows).",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "address1",
+        "description": "The email address or email addresses list",
+        "type": "Text"
+      },
+      {
+        "name": "address2",
+        "description": "The email address or email addresses list",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "EmailAddressValidate",
+    "description": "Returns true if Text \u0027address\u0027 is a valid email address. Note that EmailAddressValidate(\u0022\u0022) returns True.\nThis built-in function implements the validation specified by HTML5 (https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address) which has a practical approach to RFC 5322.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "address",
+        "description": "The email address to validate.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "GetApplicationServerType",
+    "description": "Returns \u0022.Net\u0022.",
+    "type": "Text"
+  },
+  {
+    "name": "GetCurrentLocale",
+    "description": "Returns the name of the current language locale of the user session. The name of the language locale is used for presentation purposes and follows the RFC 1766 standard format.",
+    "type": "Text"
+  },
+  {
+    "name": "GetDatabaseProvider",
+    "description": "Returns the type of the Platform Database (SqlServer, Oracle or MySQL) where the module is running.",
+    "type": "Text"
+  },
+  {
+    "name": "GetUserAgent",
+    "description": "Returns the user agent, as indicated by the header of the HTTP message.",
+    "type": "Text"
+  },
+  {
+    "name": "GetOwnerEspaceIdentifier",
+    "description": "Returns the identifier of the module that owns the element that is being processed.",
+    "type": "LongIntegerIdentifier"
+  },
+  {
+    "name": "GetEntryEspaceName",
+    "description": "Returns the name of the module that is processing the web request.",
+    "type": "Text"
+  },
+  {
+    "name": "GetEntryEspaceId",
+    "description": "Returns the identifier of the module that is processing the web request.",
+    "type": "LongIntegerIdentifier"
+  },
+  {
+    "name": "GetObsoleteTenantId",
+    "description": "Method to return a fake tenant identifier for single-tenant modules in order to mimic Site.TenantId semantic from the 6.0 version",
+    "type": "LongIntegerIdentifier"
+  },
+  {
+    "name": "GetAppName",
+    "description": "Returns the name of the app that is processing the request.",
+    "type": "Text"
+  },
+  {
+    "name": "AddPersonalAreaToURLPath",
+    "description": "Returns a string where the Personal Area is added (if applicable) to the URL path set in Text \u0027t\u0027 input parameter. This function enables you to run any page (or resource) of your module in the Personal Area without having to manually change their paths.\nThis function adds the Personal Area of the developer that is running the module to the URL path provided by the input parameter.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "url",
+        "description": "The url to add the personal area path to.",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "name": "GetBookmarkableURL",
+    "description": "Returns the URL of the screen that is currently being processed.\nThe URL returned by this function is a complete URL with the format https://organization.outsystems.app/app/screen?param1=value\u0026amp;param2=value... \nParameters and their values aren\u0027t included when parameters are optional and their values aren\u0027t set.",
+    "type": "Text"
+  },
+  {
+    "name": "GetPersonalAreaName",
+    "description": "Returns the name of the Personal Area where the module is currently running.",
+    "type": "Text"
+  },
+  {
+    "name": "GetOwnerURLPath",
+    "description": "Returns the URL path of the app that owns the element that is being processed. Note that this function does not return the complete URL but only the component containing the location of the resource within the domain and, if applicable, the personal area.",
+    "type": "Text"
+  },
+  {
+    "name": "GetExceptionURL",
+    "description": "Returns the absolute URL of the screen where the last exception was raised.",
+    "type": "Text"
+  },
+  {
+    "name": "GeneratePassword",
+    "description": "Generates and returns a password string of length \u0027l\u0027. If \u0027alpha\u0027 is True the string can contain both digits and letters, if False the string can only contain digits. The generated password string is a random combination of letters and digits, or just digits, depending on \u0027alpha\u0027.",
+    "type": "Text",
+    "inputParameters": [
+      {
+        "name": "l",
+        "description": "The length of the Text string to be generated.",
+        "type": "Integer"
+      },
+      {
+        "name": "alpha",
+        "description": "Indicates if the generated Text string can contain digits and letters or digits only.",
+        "type": "Boolean"
+      }
+    ]
+  },
+  {
+    "name": "If",
+    "description": "Returns \u0027true_return\u0027 if \u0027value\u0027 is True, otherwise returns \u0027false_return\u0027.\nThe return data type of the function is the type of \u0027true_return\u0027 unless there\u0027s an implicit conversion from \u0027true_return\u0027 type to \u0027false_return\u0027 type.\nWhen there\u0027s no implicit type conversion an invalid data type error will occur.",
+    "type": "None",
+    "inputParameters": [
+      {
+        "name": "value",
+        "description": "The condition to be evaluated.",
+        "type": "Boolean"
+      },
+      {
+        "name": "true_return",
+        "description": "The expression to be evaluated and returned when the condition is true.",
+        "type": "None"
+      },
+      {
+        "name": "false_return",
+        "description": "The expression to be evaluated and returned when the condition is false.",
+        "type": "None"
+      }
+    ]
+  },
+  {
+    "name": "IsLoadingScreen",
+    "description": "Returns true only when invoked within a screen Preparation execution and only if the screen is loading its content. Otherwise, if the screen is just being redrawn, i.e. posted back, it returns False.",
+    "type": "Boolean"
+  },
+  {
+    "name": "CurrentThemeIsMobile",
+    "description": "Returns true when the current web screen is using a mobile theme.",
+    "type": "Boolean"
+  },
+  {
+    "name": "CheckRole",
+    "description": "Returns true when the given user has the specific role.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "RoleId",
+        "description": "The identifier of the role to be validated.",
+        "type": "TextIdentifier"
+      },
+      {
+        "name": "UserId",
+        "description": "The identifier of the user for which to validate if role is granted.",
+        "type": "LongIntegerIdentifier"
+      }
+    ]
+  },
+  {
+    "name": "CheckEndUserRole",
+    "description": "Returns true when the logged user has the specific role.",
+    "type": "Boolean",
+    "inputParameters": [
+      {
+        "name": "RoleId",
+        "description": "The identifier of the role to be validated.",
+        "type": "TextIdentifier"
+      }
+    ]
+  },
+  {
+    "name": "GetUserId",
+    "description": "Returns the identifier of the user that is currently authenticated with the server or \u0027NullTextIdentifier()\u0027 if the user is not authenticated.",
+    "type": "LongIntegerIdentifier"
+  }
+]

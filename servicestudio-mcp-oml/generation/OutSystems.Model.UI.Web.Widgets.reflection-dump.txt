@@ -1,0 +1,699 @@
+// RAW REFLECTION DUMP (Descriptor types excluded) of OutSystems.Model.UI.Web.Widgets
+// Assembly: OutSystems.Model.V1 v13.0.0.0
+// 49 public interfaces
+
+public interface IButtonWidget : OutSystems.Model.UI.Web.Widgets.IButtonWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IButtonWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.Expressions.IExpression Enabled { get; }
+    string Example { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string Height { get; set; }
+    bool IsDefault { get; set; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    string Name { get; set; }
+    OutSystems.Model.UI.Web.Events.IBuiltinEvent OnClick { get; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.IObject ValidationParent { get; set; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    void SetEnabled(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetLabel(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVisible(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IButtonWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IButtonWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    string Example { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string Height { get; }
+    bool IsDefault { get; }
+    OutSystems.Model.Expressions.IExpression Label { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    string StyleClasses { get; }
+    OutSystems.Model.Expressions.IExpression Visible { get; }
+    string Width { get; }
+}
+
+public interface ICellWidget : OutSystems.Model.UI.Web.Widgets.ICellWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    Nullable<int> ColumnSpan { get; set; }
+    OutSystems.Model.UI.Web.Widgets.ICellWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string Height { get; set; }
+    string Name { get; set; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.Enumerations.VerticalAlignment VerticalAlignment { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+    OutSystems.Model.UI.Web.Widgets.IWebWidget CreateWidget(Type type, string name = null, OutSystems.Model.IKey key = null);
+}
+
+public interface ICellWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    Nullable<int> ColumnSpan { get; }
+    OutSystems.Model.UI.Web.Widgets.ICellWidgetSignatureDescriptor Descriptor { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string Height { get; }
+    string StyleClasses { get; }
+    OutSystems.Model.Enumerations.VerticalAlignment VerticalAlignment { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature> Widgets { get; }
+}
+
+public interface ICheckBoxWidget : OutSystems.Model.UI.Web.Widgets.ICheckBoxWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.ICheckBoxWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.Expressions.IExpression Enabled { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    string Name { get; set; }
+    OutSystems.Model.UI.Web.Events.IOnChange OnChange { get; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.IObject ValidationParent { get; set; }
+    OutSystems.Model.Expressions.IExpression Variable { get; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    void SetEnabled(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVariable(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVisible(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface ICheckBoxWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.ICheckBoxWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    string StyleClasses { get; }
+    OutSystems.Model.Expressions.IExpression Visible { get; }
+    string Width { get; }
+}
+
+public interface IComboBoxWidget : OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IComboBoxWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Expressions.IExpression IsMandatory { get; }
+    OutSystems.Model.Data.IEntityAttributeSignature SourceAttribute { get; set; }
+    OutSystems.Model.Data.IServerEntitySignature SourceEntity { get; set; }
+    OutSystems.Model.Expressions.IExpression Variable { get; }
+    void SetIsMandatory(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVariable(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IContainerWidget : OutSystems.Model.UI.Web.Widgets.IContainerWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.Enumerations.Align Align { get; set; }
+    OutSystems.Model.UI.Web.Widgets.IContainerWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string Height { get; set; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    string Name { get; set; }
+    OutSystems.Model.UI.Web.Events.IOnClick OnClick { get; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+    OutSystems.Model.UI.Web.Widgets.IWebWidget CreateWidget(Type type, string name = null, OutSystems.Model.IKey key = null);
+    void SetDisplay(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IContainerWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.Enumerations.Align Align { get; }
+    OutSystems.Model.UI.Web.Widgets.IContainerWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Expressions.IExpression Display { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string Height { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    string StyleClasses { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature> Widgets { get; }
+    string Width { get; }
+}
+
+public interface IContent : OutSystems.Model.UI.Web.Widgets.IContentSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IContentDescriptor Descriptor { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+    OutSystems.Model.UI.Web.Widgets.IWebWidget CreateWidget(Type type, string name = null, OutSystems.Model.IKey key = null);
+}
+
+public interface IContentSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IContentSignatureDescriptor Descriptor { get; }
+    string Name { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature> Widgets { get; }
+}
+
+public interface IEditRecordWidget : OutSystems.Model.UI.Web.Widgets.IEditRecordWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    string CellHeight { get; set; }
+    Nullable<int> CellSpacing { get; set; }
+    OutSystems.Model.UI.Web.Widgets.IEditRecordWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DisplayColumns DisplayColumns { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveCaptionWidth { get; set; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveValueWidth { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string LabelStyle { get; set; }
+    string LabelWidth { get; set; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    OutSystems.Model.Types.IRecordTypeSignature MasterEntity { get; }
+    string Name { get; set; }
+    OutSystems.Model.Types.IRecordTypeSignature RecordDefinition { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IRowWidget> Rows { get; }
+    OutSystems.Model.Expressions.IExpression SourceRecord { get; }
+    string StyleClasses { get; set; }
+    string ValueStyle { get; set; }
+    string VaueWidth { get; set; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    OutSystems.Model.UI.Web.Widgets.IRowWidget CreateRow(string name = null, OutSystems.Model.IKey key = null);
+    void SetSourceRecord(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IEditRecordWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    string CellHeight { get; }
+    Nullable<int> CellSpacing { get; }
+    OutSystems.Model.UI.Web.Widgets.IEditRecordWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DisplayColumns DisplayColumns { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveCaptionWidth { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveValueWidth { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string LabelStyle { get; }
+    string LabelWidth { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IRowWidgetSignature> Rows { get; }
+    string StyleClasses { get; }
+    string ValueStyle { get; }
+    string VaueWidth { get; }
+    string Width { get; }
+}
+
+public interface IExpressionWidget : OutSystems.Model.UI.Web.Widgets.IExpressionWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IExpressionWidgetDescriptor Descriptor { get; }
+    bool EscapeContent { get; set; }
+    string Example { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string Name { get; set; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    void SetValue(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IExpressionWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IExpressionWidgetSignatureDescriptor Descriptor { get; }
+    string Example { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string StyleClasses { get; }
+    OutSystems.Model.Expressions.IExpression Value { get; }
+}
+
+public interface IIfBranchWidget : OutSystems.Model.UI.Web.Widgets.IIfBranchWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IIfBranchWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+    OutSystems.Model.UI.Web.Widgets.IWebWidget CreateWidget(Type type, string name = null, OutSystems.Model.IKey key = null);
+}
+
+public interface IIfBranchWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IIfBranchWidgetSignatureDescriptor Descriptor { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature> Widgets { get; }
+}
+
+public interface IIfWidget : OutSystems.Model.UI.Web.Widgets.IIfWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.Expressions.IExpression Condition { get; }
+    OutSystems.Model.UI.Web.Widgets.IIfWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DesignMode DesignMode { get; set; }
+    OutSystems.Model.UI.Web.Widgets.IIfBranchWidget FalseBranch { get; }
+    string Name { get; set; }
+    OutSystems.Model.UI.Web.Widgets.IIfBranchWidget TrueBranch { get; }
+    void SetCondition(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IIfWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IIfWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DesignMode DesignMode { get; }
+    OutSystems.Model.UI.Web.Widgets.IIfBranchWidgetSignature FalseBranch { get; }
+    OutSystems.Model.UI.Web.Widgets.IIfBranchWidgetSignature TrueBranch { get; }
+}
+
+public interface IInputFilenameWidget : OutSystems.Model.UI.Web.Widgets.IInputFilenameWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IInputFilenameWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.Expressions.IExpression Enabled { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    string Name { get; set; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.IObject ValidationParent { get; set; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    void SetEnabled(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVisible(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IInputFilenameWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IInputFilenameWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    string StyleClasses { get; }
+    OutSystems.Model.Expressions.IExpression Visible { get; }
+    string Width { get; }
+}
+
+public interface IInputPasswordWidget : OutSystems.Model.UI.Web.Widgets.IInputPasswordWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IInputPasswordWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.Expressions.IExpression Enabled { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    Nullable<int> MaxLength { get; set; }
+    string Name { get; set; }
+    OutSystems.Model.UI.Web.Events.IOnChange OnChange { get; }
+    OutSystems.Model.Enumerations.PasswordType PasswordType { get; set; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.IObject ValidationParent { get; set; }
+    OutSystems.Model.Expressions.IExpression Variable { get; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    void SetEnabled(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetMandatory(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVariable(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVisible(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IInputPasswordWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IInputPasswordWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    OutSystems.Model.Expressions.IExpression Mandatory { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    string StyleClasses { get; }
+    OutSystems.Model.Expressions.IExpression Visible { get; }
+    string Width { get; }
+}
+
+public interface IInputWidget : OutSystems.Model.UI.Web.Widgets.IInputWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IInputWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.Expressions.IExpression Enabled { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    Nullable<int> MaxLength { get; set; }
+    string Name { get; set; }
+    OutSystems.Model.Expressions.IExpression NullValue { get; }
+    OutSystems.Model.UI.Web.Events.IOnChange OnChange { get; }
+    string StyleClasses { get; set; }
+    Nullable<int> TextLines { get; set; }
+    OutSystems.Model.Enumerations.InputType Type { get; set; }
+    OutSystems.Model.IObject ValidationParent { get; set; }
+    OutSystems.Model.Expressions.IExpression Variable { get; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    void SetEnabled(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetMandatory(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetNullValue(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetPrompt(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVariable(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVisible(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IInputWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IInputWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    OutSystems.Model.Expressions.IExpression Mandatory { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    OutSystems.Model.Expressions.IExpression Prompt { get; }
+    string StyleClasses { get; }
+    Nullable<int> TextLines { get; }
+    OutSystems.Model.Expressions.IExpression Visible { get; }
+    string Width { get; }
+}
+
+public interface ILinkWidget : OutSystems.Model.UI.Web.Widgets.ILinkWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.ILinkWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Expressions.IExpression Enabled { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    bool IsDefault { get; set; }
+    string Name { get; set; }
+    OutSystems.Model.UI.Web.Events.ILinkOnClick OnClick { get; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.Expressions.IExpression Title { get; }
+    OutSystems.Model.IObject ValidationParent { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    OutSystems.Model.UI.Web.Events.ILinkOnClick CreateOnClick();
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+    OutSystems.Model.UI.Web.Widgets.IWebWidget CreateWidget(Type type, string name = null, OutSystems.Model.IKey key = null);
+    void SetEnabled(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetTitle(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVisible(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface ILinkWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.ILinkWidgetSignatureDescriptor Descriptor { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    bool IsDefault { get; }
+    string StyleClasses { get; }
+    OutSystems.Model.Expressions.IExpression Visible { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature> Widgets { get; }
+}
+
+public interface IListRecordsWidget : OutSystems.Model.UI.Web.Widgets.IListRecordsWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IListRecordsWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DesignMode DesignMode { get; set; }
+    OutSystems.Model.Expressions.IExpression EmptyMessage { get; }
+    string EmptyMessageStyle { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    OutSystems.Model.Enumerations.ListRecordsLineSeparator LineSeparator { get; set; }
+    OutSystems.Model.Types.IRecordTypeSignature MasterEntity { get; }
+    string Name { get; set; }
+    OutSystems.Model.Expressions.IExpression SourceRecordList { get; }
+    OutSystems.Model.Expressions.IExpression StartIndex { get; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.Types.IListType Type { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+    OutSystems.Model.UI.Web.Widgets.IWebWidget CreateWidget(Type type, string name = null, OutSystems.Model.IKey key = null);
+    void SetEmptyMessage(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetLineCount(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetSourceRecordList(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetStartIndex(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IListRecordsWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IListRecordsWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DesignMode DesignMode { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    OutSystems.Model.Expressions.IExpression LineCount { get; }
+    OutSystems.Model.Enumerations.ListRecordsLineSeparator LineSeparator { get; }
+    string StyleClasses { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature> Widgets { get; }
+}
+
+public interface IPlaceholderContentWidget : OutSystems.Model.UI.Web.Widgets.IPlaceholderContentWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IPlaceholderContentWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+    OutSystems.Model.UI.Web.Widgets.IWebWidget CreateWidget(Type type, string name = null, OutSystems.Model.IKey key = null);
+}
+
+public interface IPlaceholderContentWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IPlaceholderContentWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.UI.Web.Widgets.IPlaceholderWidgetSignature Placeholder { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature> Widgets { get; }
+}
+
+public interface IPlaceholderWidget : OutSystems.Model.UI.Web.Widgets.IPlaceholderWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.Enumerations.Align Align { get; set; }
+    string Description { get; set; }
+    OutSystems.Model.UI.Web.Widgets.IPlaceholderWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string Height { get; set; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    string Name { get; set; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+    OutSystems.Model.UI.Web.Widgets.IWebWidget CreateWidget(Type type, string name = null, OutSystems.Model.IKey key = null);
+}
+
+public interface IPlaceholderWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.Enumerations.Align Align { get; }
+    string Description { get; }
+    OutSystems.Model.UI.Web.Widgets.IPlaceholderWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string Height { get; }
+    bool IsAjaxRefreshed { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    string Name { get; }
+    string StyleClasses { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature> Widgets { get; }
+    string Width { get; }
+}
+
+public interface IRadioButtonWidget : OutSystems.Model.UI.Web.Widgets.IRadioButtonWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.IRadioButtonWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.Expressions.IExpression Enabled { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    string Name { get; set; }
+    OutSystems.Model.UI.Web.Events.IOnChange OnChange { get; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.IObject ValidationParent { get; set; }
+    OutSystems.Model.Expressions.IExpression Value { get; }
+    OutSystems.Model.Expressions.IExpression Variable { get; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    void SetEnabled(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetValue(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVariable(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetVisible(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IRadioButtonWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IRadioButtonWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    string StyleClasses { get; }
+    OutSystems.Model.Expressions.IExpression Visible { get; }
+    string Width { get; }
+}
+
+public interface IRowWidget : OutSystems.Model.UI.Web.Widgets.IRowWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.ICellWidget> Cells { get; }
+    OutSystems.Model.UI.Web.Widgets.IRowWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    OutSystems.Model.UI.Web.Widgets.ICellWidget CreateCell(string name = null, OutSystems.Model.IKey key = null);
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+}
+
+public interface IRowWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.ICellWidgetSignature> Cells { get; }
+    OutSystems.Model.UI.Web.Widgets.IRowWidgetSignatureDescriptor Descriptor { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+}
+
+public interface IShowRecordWidget : OutSystems.Model.UI.Web.Widgets.IShowRecordWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    string CellHeight { get; set; }
+    Nullable<int> CellSpacing { get; set; }
+    OutSystems.Model.UI.Web.Widgets.IShowRecordWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DisplayColumns DisplayColumns { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveCaptionWidth { get; set; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveValueWidth { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string LabelStyle { get; set; }
+    string LabelWidth { get; set; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    OutSystems.Model.Types.IRecordTypeSignature MasterEntity { get; }
+    string Name { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IRowWidget> Rows { get; }
+    OutSystems.Model.Expressions.IExpression SourceRecord { get; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.Types.IRecordTypeSignature Type { get; }
+    string ValueStyle { get; set; }
+    string VaueWidth { get; set; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    OutSystems.Model.UI.Web.Widgets.IRowWidget CreateRow(string name = null, OutSystems.Model.IKey key = null);
+    void SetSourceRecord(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IShowRecordWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    string CellHeight { get; }
+    Nullable<int> CellSpacing { get; }
+    OutSystems.Model.UI.Web.Widgets.IShowRecordWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DisplayColumns DisplayColumns { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveCaptionWidth { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveValueWidth { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string LabelStyle { get; }
+    string LabelWidth { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IRowWidgetSignature> Rows { get; }
+    string StyleClasses { get; }
+    string ValueStyle { get; }
+    string VaueWidth { get; }
+    string Width { get; }
+}
+
+public interface ITableRecordsWidget : OutSystems.Model.UI.Web.Widgets.ITableRecordsWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    string CellHeight { get; set; }
+    Nullable<int> CellSpacing { get; set; }
+    OutSystems.Model.UI.Web.Widgets.IRowWidget DataRow { get; }
+    OutSystems.Model.UI.Web.Widgets.ITableRecordsWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DesignMode DesignMode { get; set; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.Expressions.IExpression EmptyMessage { get; }
+    string EvenLineStyle { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    OutSystems.Model.UI.Web.Widgets.IRowWidget HeaderRow { get; }
+    string HeaderStyle { get; set; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    OutSystems.Model.Types.IRecordTypeSignature MasterEntity { get; }
+    string Name { get; set; }
+    string OddLineStyle { get; set; }
+    bool ShowHeader { get; set; }
+    OutSystems.Model.Expressions.IExpression SourceRecordList { get; }
+    OutSystems.Model.Expressions.IExpression StartIndex { get; }
+    string StyleClasses { get; set; }
+    OutSystems.Model.Types.IListType Type { get; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    void SetEmptyMessage(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetLineCount(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetSourceRecordList(OutSystems.Model.Expressions.ExpressionDefinition value);
+    void SetStartIndex(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface ITableRecordsWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    string CellHeight { get; }
+    Nullable<int> CellSpacing { get; }
+    OutSystems.Model.UI.Web.Widgets.IRowWidgetSignature DataRow { get; }
+    OutSystems.Model.UI.Web.Widgets.ITableRecordsWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DesignMode DesignMode { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    string EvenLineStyle { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    OutSystems.Model.UI.Web.Widgets.IRowWidgetSignature HeaderRow { get; }
+    string HeaderStyle { get; }
+    OutSystems.Model.Expressions.IExpression LineCount { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    string OddLineStyle { get; }
+    bool ShowHeader { get; }
+    string StyleClasses { get; }
+    string Width { get; }
+}
+
+public interface ITableWidget : OutSystems.Model.UI.Web.Widgets.ITableWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.Enumerations.Align Align { get; set; }
+    string CellHeight { get; set; }
+    Nullable<int> CellSpacing { get; set; }
+    OutSystems.Model.UI.Web.Widgets.ITableWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; set; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string Height { get; set; }
+    string MarginLeft { get; set; }
+    string MarginTop { get; set; }
+    string Name { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IRowWidget> Rows { get; }
+    string StyleClasses { get; set; }
+    string Width { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    OutSystems.Model.UI.Web.Widgets.IRowWidget CreateRow(string name = null, OutSystems.Model.IKey key = null);
+}
+
+public interface ITableWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.Enumerations.Align Align { get; }
+    string CellHeight { get; }
+    Nullable<int> CellSpacing { get; }
+    OutSystems.Model.UI.Web.Widgets.ITableWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.EffectiveMarginLeftType EffectiveMarginLeft { get; }
+    OutSystems.Model.Enumerations.EffectiveWidthType EffectiveWidth { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string Height { get; }
+    string MarginLeft { get; }
+    string MarginTop { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IRowWidgetSignature> Rows { get; }
+    string StyleClasses { get; }
+    string Width { get; }
+}
+
+public interface ITextWidget : OutSystems.Model.UI.Web.Widgets.ITextWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    OutSystems.Model.UI.Web.Widgets.ITextWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    string Name { get; set; }
+    string StyleClasses { get; set; }
+    string Text { get; set; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+}
+
+public interface ITextWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.ITextWidgetSignatureDescriptor Descriptor { get; }
+    IEnumerable<OutSystems.Model.IExtendedPropertySignature> ExtendedProperties { get; }
+    string StyleClasses { get; }
+    string Text { get; }
+}
+
+public interface IWebBlockInstanceWidget : OutSystems.Model.UI.Web.Widgets.IWebBlockInstanceWidgetSignature, OutSystems.Model.UI.Web.Widgets.IWebWidget {
+    IEnumerable<OutSystems.Model.IArgument> Arguments { get; }
+    OutSystems.Model.UI.Web.Widgets.IWebBlockInstanceWidgetDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DesignMode DesignMode { get; set; }
+    IEnumerable<OutSystems.Model.UI.IEventHandler> EventHandlers { get; }
+    string Name { get; set; }
+    OutSystems.Model.UI.Web.Events.IOnNotify OnNotify { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IPlaceholderContentWidget> PlaceholdersContent { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignature SourceBlock { get; set; }
+    OutSystems.Model.IObject ValidationParent { get; set; }
+}
+
+public interface IWebBlockInstanceWidgetSignature : OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    IEnumerable<OutSystems.Model.IArgumentSignature> Arguments { get; }
+    OutSystems.Model.UI.Web.Widgets.IWebBlockInstanceWidgetSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.DesignMode DesignMode { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IPlaceholderContentWidgetSignature> PlaceholdersContent { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignature SourceBlock { get; }
+}
+
+public interface IWebWidget : OutSystems.Model.UI.IWidget, OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IWebWidgetDescriptor Descriptor { get; }
+}
+
+public interface IWebWidgetSignature : OutSystems.Model.UI.IWidgetSignature {
+    OutSystems.Model.UI.Web.Widgets.IWebWidgetSignatureDescriptor Descriptor { get; }
+}
+

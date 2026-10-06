@@ -1,0 +1,236 @@
+// RAW REFLECTION DUMP (Descriptor types excluded) of OutSystems.Model.UI.Web
+// Assembly: OutSystems.Model.V1 v13.0.0.0
+// 20 public interfaces
+
+public interface IComment : OutSystems.Model.UI.Web.IWebFlowNode {
+    IEnumerable<OutSystems.Model.UI.Web.ICommentConnector> Connectors { get; }
+    string CreatedBy { get; set; }
+    OutSystems.Model.UI.Web.ICommentDescriptor Descriptor { get; }
+    bool IsReminder { get; set; }
+    string LastMergedBy { get; }
+    DateTime LastMergedDate { get; }
+    string LastModifiedBy { get; set; }
+    DateTime LastModifiedDate { get; set; }
+    string Text { get; set; }
+    OutSystems.Model.UI.Web.ICommentConnector CreateConnector(OutSystems.Model.UI.Web.IWebFlowNode target);
+}
+
+public interface ICommentConnector : OutSystems.Model.UI.Web.IWebFlowConnector {
+    OutSystems.Model.UI.Web.ICommentConnectorDescriptor Descriptor { get; }
+    string Label { get; set; }
+}
+
+public interface IEntry : OutSystems.Model.UI.Web.IWebFlowNode {
+    string Description { get; set; }
+    OutSystems.Model.UI.Web.IEntryDescriptor Descriptor { get; }
+    bool IsDefault { get; set; }
+    string Name { get; set; }
+    OutSystems.Model.UI.IUIFlowNode Target { get; set; }
+}
+
+public interface IExternalSite : OutSystems.Model.UI.Web.IWebFlowNode {
+    string CreatedBy { get; set; }
+    string Description { get; set; }
+    OutSystems.Model.UI.Web.IExternalSiteDescriptor Descriptor { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IInputParameter> InputParameters { get; }
+    bool IsFrequentDestination { get; set; }
+    string LastMergedBy { get; }
+    DateTime LastMergedDate { get; }
+    string LastModifiedBy { get; set; }
+    DateTime LastModifiedDate { get; set; }
+    string Name { get; set; }
+    string URL { get; set; }
+    OutSystems.Model.IInputParameter CreateInputParameter(string name = null, OutSystems.Model.IKey key = null);
+}
+
+public interface IGoToDestination : OutSystems.Model.UI.Web.IWebFlowNode {
+    OutSystems.Model.UI.Web.IGoToDestinationDescriptor Descriptor { get; }
+    OutSystems.Model.UI.IUIFlowNodeSignature Destination { get; set; }
+}
+
+public interface IPreparation : OutSystems.Model.IObject {
+    string CreatedBy { get; set; }
+    OutSystems.Model.UI.Web.IPreparationDescriptor Descriptor { get; }
+    string LastMergedBy { get; }
+    DateTime LastMergedDate { get; }
+    string LastModifiedBy { get; set; }
+    DateTime LastModifiedDate { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.IMetadata> Metadata { get; }
+    IEnumerable<OutSystems.Model.Logic.Nodes.IActionNode> Nodes { get; }
+    IEnumerable<OutSystems.Model.ITextResource> TextResources { get; }
+    IEnumerable<string> TextResourcesIds { get; }
+    bool UserReadOnlySessionsInScreens { get; set; }
+    T CreateMetadata<T>(string name, string managedBy, OutSystems.Model.IKey key = null) where T: OutSystems.Model.IMetadata;
+    T CreateNode<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.Logic.Nodes.IActionNode;
+    OutSystems.Model.Logic.Nodes.IActionNode CreateNode(Type type, string name = null, OutSystems.Model.IKey key = null);
+    void CreateOrUpdateTranslation(OutSystems.Model.Enumerations.Culture culture, string id, string value);
+    void SetTranslationBehavior(string id, OutSystems.Model.Enumerations.TranslationBehavior behavior);
+}
+
+public interface IScreenAction : OutSystems.Model.IObject {
+    string CreatedBy { get; set; }
+    string Description { get; set; }
+    OutSystems.Model.UI.Web.IScreenActionDescriptor Descriptor { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IInputParameter> InputParameters { get; }
+    bool IsCalledByAjax { get; }
+    string LastMergedBy { get; }
+    DateTime LastMergedDate { get; }
+    string LastModifiedBy { get; set; }
+    DateTime LastModifiedDate { get; set; }
+    OutSystems.Model.ISequence<OutSystems.Model.ILocalVariable> LocalVariables { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IMetadata> Metadata { get; }
+    string Name { get; set; }
+    IEnumerable<OutSystems.Model.Logic.Nodes.IActionNode> Nodes { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IOutputParameter> OutputParameters { get; }
+    IEnumerable<OutSystems.Model.ITextResource> TextResources { get; }
+    IEnumerable<string> TextResourcesIds { get; }
+    bool UserReadOnlySessionsInScreens { get; set; }
+    OutSystems.Model.IInputParameter CreateInputParameter(string name = null, OutSystems.Model.IKey key = null);
+    OutSystems.Model.ILocalVariable CreateLocalVariable(string name = null, OutSystems.Model.IKey key = null);
+    T CreateMetadata<T>(string name, string managedBy, OutSystems.Model.IKey key = null) where T: OutSystems.Model.IMetadata;
+    T CreateNode<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.Logic.Nodes.IActionNode;
+    OutSystems.Model.Logic.Nodes.IActionNode CreateNode(Type type, string name = null, OutSystems.Model.IKey key = null);
+    void CreateOrUpdateTranslation(OutSystems.Model.Enumerations.Culture culture, string id, string value);
+    OutSystems.Model.IOutputParameter CreateOutputParameter(string name = null, OutSystems.Model.IKey key = null);
+    void SetTranslationBehavior(string id, OutSystems.Model.Enumerations.TranslationBehavior behavior);
+}
+
+public interface IWebBlock : OutSystems.Model.IShareableESpaceObject<OutSystems.Model.UI.Web.IWebBlock, OutSystems.Model.UI.Web.IWebBlockSignature>, OutSystems.Model.UI.IBlock, OutSystems.Model.UI.Web.IWebBlockSignature, OutSystems.Model.UI.Web.IWebFlowNode {
+    Nullable<int> CacheInMinutes { get; set; }
+    OutSystems.Model.UI.Web.IWebBlockDescriptor Descriptor { get; }
+    bool HasValidationBehavior { get; set; }
+    bool IncludeRuntimeJavaScript { get; set; }
+    bool IsNotAjaxSelfRefreshable { get; set; }
+    OutSystems.Model.UI.Web.IPreparation Preparation { get; }
+    IEnumerable<OutSystems.Model.UI.Web.IScreenAction> ScreenActions { get; }
+    ICollection<OutSystems.Model.UI.IUIFlowNode> Targets { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    OutSystems.Model.UI.Web.IPreparation CreatePreparation();
+    OutSystems.Model.UI.Web.IScreenAction CreateScreenAction(string name = null, OutSystems.Model.IKey key = null);
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+}
+
+public interface IWebBlockSignature : OutSystems.Model.UI.IBlockSignature, OutSystems.Model.UI.Web.IWebFlowNodeSignature {
+    Nullable<int> CacheInMinutes { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignatureDescriptor Descriptor { get; }
+    bool HasInputs { get; }
+    bool HasNotification { get; }
+    bool HasValidationBehavior { get; }
+    bool IncludeRuntimeJavaScript { get; }
+    bool IsNotAjaxSelfRefreshable { get; }
+    IEnumerable<OutSystems.Model.UI.Web.Widgets.IWebWidgetSignature> Widgets { get; }
+}
+
+public interface IWebDestination : OutSystems.Model.IObject {
+}
+
+public interface IWebEmail : OutSystems.Model.UI.IEmail, OutSystems.Model.UI.Web.IWebFlowNode {
+    OutSystems.Model.UI.Web.IWebEmailDescriptor Descriptor { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    OutSystems.Model.UI.Web.IPreparation Preparation { get; }
+    ICollection<OutSystems.Model.UI.IUIFlowNode> Targets { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    OutSystems.Model.UI.Web.IPreparation CreatePreparation();
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+}
+
+public interface IWebFlow : OutSystems.Model.IShareableESpaceObject<OutSystems.Model.UI.Web.IWebFlow, OutSystems.Model.UI.Web.IWebFlowSignature>, OutSystems.Model.UI.IUIFlow, OutSystems.Model.UI.Web.IWebFlowSignature {
+    string Description { get; set; }
+    OutSystems.Model.UI.Web.IWebFlowDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.HTTPSecurityWithCertificates HTTPSecurity { get; set; }
+    bool IntegratedAuthentication { get; set; }
+    bool InternalAccessOnly { get; set; }
+    IEnumerable<OutSystems.Model.UI.Web.IWebFlowNode> Nodes { get; }
+    OutSystems.Model.UI.Web.IWebThemeSignature Theme { get; set; }
+    OutSystems.Model.UI.Web.IWebBlock CreateBlock(string name = null, OutSystems.Model.IKey key = null);
+    OutSystems.Model.UI.Web.IWebEmail CreateEmail(string name = null, OutSystems.Model.IKey key = null);
+    T CreateNode<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.IWebFlowNode;
+    OutSystems.Model.UI.Web.IWebScreen CreateScreen(string name = null, OutSystems.Model.IKey key = null);
+    OutSystems.Model.UI.Web.IWebScreen Instantiate(OutSystems.Model.UI.Web.IWebScreen templateScreen, OutSystems.Model.IKey newScreenKey = null);
+    IEnumerable<OutSystems.Model.UI.Web.IWebScreen> Instantiate(IEnumerable<OutSystems.Model.UI.Web.IWebScreen> templateScreens, IEnumerable<OutSystems.Model.IKey> newScreensKeys = null);
+}
+
+public interface IWebFlowConnector : OutSystems.Model.UI.IUIFlowConnector {
+    OutSystems.Model.UI.Web.IWebFlowConnectorDescriptor Descriptor { get; }
+    OutSystems.Model.UI.Web.IWebFlowNode Source { get; }
+    OutSystems.Model.UI.Web.IWebFlowNode Target { get; set; }
+}
+
+public interface IWebFlowNode : OutSystems.Model.UI.IUIFlowNode, OutSystems.Model.UI.Web.IWebFlowNodeSignature {
+    OutSystems.Model.UI.Web.IWebFlowNodeDescriptor Descriptor { get; }
+}
+
+public interface IWebFlowNodeSignature : OutSystems.Model.UI.IUIFlowNodeSignature {
+    OutSystems.Model.UI.Web.IWebFlowNodeSignatureDescriptor Descriptor { get; }
+}
+
+public interface IWebFlowSignature : OutSystems.Model.UI.IUIFlowSignature {
+    OutSystems.Model.UI.Web.IWebFlowSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.HTTPSecurityWithCertificates HTTPSecurity { get; }
+    bool IntegratedAuthentication { get; }
+    bool InternalAccessOnly { get; }
+    IEnumerable<OutSystems.Model.UI.Web.IWebFlowNodeSignature> Nodes { get; }
+}
+
+public interface IWebScreen : OutSystems.Model.IShareableESpaceObject<OutSystems.Model.UI.Web.IWebScreen, OutSystems.Model.UI.Web.IWebScreenSignature>, OutSystems.Model.UI.IScreen, OutSystems.Model.UI.Web.IWebFlowNode, OutSystems.Model.UI.Web.IWebScreenSignature {
+    Nullable<int> CacheInMinutes { get; set; }
+    OutSystems.Model.UI.Web.IWebScreenDescriptor Descriptor { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.IExtendedProperty> ExtendedProperties { get; }
+    OutSystems.Model.Enumerations.HTTPSecurityWithCertificatesAndInheritance HTTPSecurity { get; set; }
+    OutSystems.Model.Enumerations.BooleanWithInheritance IntegratedAuthentication { get; set; }
+    bool IsFrequentDestination { get; set; }
+    string JavaScript { get; set; }
+    OutSystems.Model.UI.Web.IPreparation Preparation { get; }
+    IEnumerable<OutSystems.Model.UI.Web.IScreenAction> ScreenActions { get; }
+    ICollection<OutSystems.Model.UI.IUIFlowNode> Targets { get; }
+    OutSystems.Model.Expressions.IExpression Title { get; }
+    OutSystems.Model.ISequence<OutSystems.Model.UI.Web.Widgets.IWebWidget> Widgets { get; }
+    OutSystems.Model.IExtendedProperty CreateExtendedProperty();
+    OutSystems.Model.UI.Web.IPreparation CreatePreparation();
+    OutSystems.Model.UI.Web.IScreenAction CreateScreenAction(string name = null, OutSystems.Model.IKey key = null);
+    T CreateWidget<T>(string name = null, OutSystems.Model.IKey key = null) where T: OutSystems.Model.UI.Web.Widgets.IWebWidget;
+    void SetTitle(OutSystems.Model.Expressions.ExpressionDefinition value);
+}
+
+public interface IWebScreenSignature : OutSystems.Model.UI.IScreenSignature, OutSystems.Model.UI.Web.IWebFlowNodeSignature {
+    OutSystems.Model.UI.Web.IWebScreenSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.Enumerations.HTTPSecurityWithCertificatesAndInheritance HTTPSecurity { get; }
+}
+
+public interface IWebTheme : OutSystems.Model.IShareableESpaceObject<OutSystems.Model.UI.Web.IWebTheme, OutSystems.Model.UI.Web.IWebThemeSignature>, OutSystems.Model.UI.ITheme, OutSystems.Model.UI.Web.IWebThemeSignature {
+    OutSystems.Model.UI.Web.IWebThemeSignature BaseTheme { get; set; }
+    OutSystems.Model.UI.Web.IWebThemeDescriptor Descriptor { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignature Email { get; set; }
+    OutSystems.Model.UI.Web.IWebFlow ExceptionHandlingFlow { get; set; }
+    OutSystems.Model.UI.IImageSignature FalseImage { get; set; }
+    OutSystems.Model.UI.Web.IWebBlockSignature Footer { get; set; }
+    OutSystems.Model.UI.Web.IWebBlockSignature Header { get; set; }
+    OutSystems.Model.UI.Web.IWebBlockSignature InfoBalloon { get; set; }
+    OutSystems.Model.UI.IImageSignature InfoBalloonImage { get; set; }
+    OutSystems.Model.UI.Web.IWebBlockSignature Layout { get; set; }
+    OutSystems.Model.UI.Web.IWebBlockSignature Menu { get; set; }
+    bool Mobile { get; set; }
+    OutSystems.Model.UI.IOnExceptionAction OnExceptionHandler { get; set; }
+    OutSystems.Model.UI.Web.IWebBlockSignature PopUpEditor { get; set; }
+    OutSystems.Model.UI.IImageSignature TrueImage { get; set; }
+}
+
+public interface IWebThemeSignature : OutSystems.Model.UI.IThemeSignature {
+    OutSystems.Model.UI.Web.IWebThemeSignature BaseTheme { get; }
+    OutSystems.Model.UI.Web.IWebThemeSignatureDescriptor Descriptor { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignature Email { get; }
+    OutSystems.Model.UI.IImageSignature FalseImage { get; }
+    OutSystems.Model.UI.Web.IWebThemeSignature FirstThemeWithGrid { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignature Footer { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignature Header { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignature InfoBalloon { get; }
+    OutSystems.Model.UI.IImageSignature InfoBalloonImage { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignature Layout { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignature Menu { get; }
+    bool Mobile { get; }
+    OutSystems.Model.UI.IOnExceptionActionSignature OnExceptionHandler { get; }
+    OutSystems.Model.UI.Web.IWebBlockSignature PopUpEditor { get; }
+    OutSystems.Model.UI.IImageSignature TrueImage { get; }
+}
+

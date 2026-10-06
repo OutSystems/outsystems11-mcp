@@ -1,0 +1,847 @@
+# Effectiveness eval for servicestudio-mcp-oml SKILL.md.
+#
+# Run with the slash command (recommended):
+#
+#   /skill-forge:run-eval skills/servicestudio-mcp-oml/SKILL.md
+#
+# Or invoke the runner directly:
+#
+#   python "${CLAUDE_PLUGIN_ROOT}/scripts/test_skill_effectiveness.py" \
+#     skills/servicestudio-mcp-oml/SKILL.md \
+#     --test-file skills/servicestudio-mcp-oml/effectiveness.yml
+#
+# What this test demonstrates:
+#   - prerequisites gate the basics: the response identifies the right
+#     MCP tool, produces some C# code, and addresses the user's task.
+#     A modern model handles these even with no skill loaded.
+#   - skill_scoring measures the skill-specific behaviour: the full-lambda
+#     contract (a complete `eSpace => { ... }` lambda, no `eSpace.Save`),
+#     the session token + `input` argument envelope (scenario_3), the
+#     response shape (exceptionMessage + validationMessages + mutatedOmlPath
+#     in a result; compile errors as an MCP tool error carrying
+#     `compilationErrors:` lines), the read-before-write reflex with
+#     includeJson. Claude without the skill defaults to ODC-style full
+#     lambdas WITH an explicit Save and misses the host-only tools entirely.
+#   - the six response outcomes are covered as a set: clean save
+#     (scenario_1), compile error failure (scenario_4), silent no-op
+#     (scenario_5), and the runner process-crash (scenario_8) — the one
+#     that is silent on every channel, so the only recovery is a health
+#     probe plus a bisect.
+#   - the code sandbox and the throw-probe that replaces Console output
+#     (scenario_14), silent renames of taken/reserved names (scenario_15),
+#     Reactive screen access (scenario_16), node scaffolding that differs by
+#     action kind (scenario_17 REST methods, scenario_18 exception handlers)
+#     and O11 BPT process authoring via `CreateProcess` (scenario_19).
+#   - the remaining scenarios cover live-verified crash traps a model will
+#     otherwise walk into: chart DataPointList binding (scenario_9 — the
+#     `TypeConversion` form compiles and crashes), entity-from-scratch
+#     identifier ordering (scenario_10), and Traditional->Reactive
+#     migration cleanup (scenario_11), the untyped
+#     `eSpace.Entities` sweep (scenario_12 — `OfType<>` filtering plus the
+#     full type qualification), and a harness-level failure that is not a
+#     code bug at all (scenario_13 — every tool call failing identically
+#     because the client corrupts the argument envelope).
+
+test_type: "effectiveness"
+name: "servicestudio-mcp-oml effectiveness"
+description: "Validates that the SKILL.md teaches the full-lambda contract (no eSpace.Save), the new response shape, read-before-write."
+
+execution: direct
+
+scenario_1:
+  name: "happy_path_add_entity"
+
+  codebase:
+    files: []
+
+  prompt: |
+    Using Service Studio's in-process MCP Server, write the
+    `applyModelApiCode` call that adds a `Customer` server entity with a
+    `Name` text attribute (length 200) to the open module `MyModule`. You
+    already hold a session token. Show the JSON payload you would send to
+    the tool, and describe the very next tool call you would make after
+    this one succeeds.
+
+  validation:
+    prerequisites:
+      - point: "Calls applyModelApiCode"
+        description: "The response targets the tool `applyModelApiCode` — NOT some other API like Service Studio UI clicks or REST endpoints, and NOT the old `oml_apply_model_api_code` name."
+
+      - point: "Mentions Customer entity"
+        description: "The C# code shown creates a server entity named `Customer`."
+
+      - point: "Mentions Name attribute"
+        description: "The C# code creates a `Name` attribute on the Customer entity with text type and length 200."
+
+    skill_scoring:
+      - point: "Full lambda — `code` is `eSpace => { ... }`"
+        description: "The `code` field is a complete lambda: it begins with `eSpace =>` and wraps the statements in `{ }`. Body-only statements with no wrapper are the WRONG answer under the current contract — the host strips the trailing `}` and injects the save, so a bare body fails to compile."
+
+      - point: "No explicit `eSpace.Save(...)` call"
+        description: "The `code` field does NOT include `eSpace.Save(` anywhere. The host appends the save against a host-allocated path; a Save in your lambda is redundant and risks malforming the wrap. (This is the one way the MCP contract differs from the standalone full-lambda form.)"
+
+      - point: "Uses literal identifier `eSpace`"
+        description: "The lambda parameter and all method calls use the identifier `eSpace` (not `m`, `app`, `model`, or any rename). The host's injected save is hardcoded to `eSpace`; any other identifier fails to compile with CS0103."
+
+      - point: "Next call is a verify read with `getDataModel`, then `omlMerge`"
+        description: "The response says the next step after a successful mutation is to re-read with `getDataModel` (or the matching `get*`) to confirm the change landed (a clean response is not proof of mutation — silent-no-op trap), then to finalise by calling `omlMerge` with the `mutatedOmlPath` returned by the apply call. It should NOT claim the path is unavailable or that merging can only happen through the Service Studio UI."
+
+      - point: "Payload uses the `input` envelope plus `sessionToken`"
+        description: "The JSON payload is shaped `{ \"input\": { \"eSpaceName\": \"MyModule\", \"code\": \"…\", \"imports\": [...] }, \"sessionToken\": \"<token>\" }` — `code`, `imports` and `eSpaceName` nested inside `input` (all three present; `imports` may be `[]`) and the token as a top-level sibling. A flat `{ \"code\": …, \"imports\": … }` payload, or one with no `sessionToken`, is the WRONG answer under the current contract."
+
+      - point: "References `CreateServerEntity`"
+        description: "The code creates the entity with `eSpace.CreateServerEntity(\"Customer\")`. Both overloads are acceptable: the single-arg form is verified working, and the two-arg form supplying a key via `eSpace.Key.CreateNewKeyBasedOnThis(new object[] { \"Customer\" })` is equally valid. It must NOT reach for some other creation route (e.g. `eSpace.Entities.Add(...)`)."
+
+scenario_2:
+  name: "read_before_write_with_includeJson"
+
+  codebase:
+    files: []
+
+  prompt: |
+    Before adding any entity to the open OML module `MyModule` via the
+    in-process MCP Server (the agent already holds a session token), what
+    should the agent do first? Show the exact MCP tool call (tool name +
+    JSON arguments) it should make.
+
+  validation:
+    prerequisites:
+      - point: "Recommends reading first"
+        description: "The answer states the agent should read the existing model before mutating."
+
+      - point: "Names a concrete read tool"
+        description: "The answer points at `getDataModel` (or another `get*` read tool like `getStructures`)."
+
+    skill_scoring:
+      - point: "Calls `getDataModel` specifically"
+        description: "The recommended read tool is `getDataModel` — that is the tool the SKILL.md singles out for the read-before-write reflex. NOT `runQuery`, NOT a generic 'any read tool'."
+
+      - point: "Passes `includeJson` argument"
+        description: "The tool call shown includes `includeJson` inside its `input` object. It is a required field on the code-returning reads; without it the MCP call fails to deserialize. NOT omitted, NOT marked as optional."
+
+      - point: "Uses `\"Never\"` as the value for `includeJson`"
+        description: "The recommended value for `includeJson` is `\"Never\"` — the value the skill prescribes for every code-returning read. NOT `true`/`false`, NOT `\"Yes\"`/`\"No\"`."
+
+      - point: "Arguments are wrapped in `input` with a top-level `sessionToken`"
+        description: "The call is shaped `{ \"input\": { \"eSpaceName\": \"MyModule\", \"includeJson\": \"Never\" }, \"sessionToken\": \"<token>\" }`. A flat `{ \"includeJson\": \"Never\" }` with no `input` wrapper, no `eSpaceName` or no `sessionToken` is the WRONG answer."
+
+scenario_3:
+  name: "session_token_and_input_envelope"
+
+  read_references:
+    - reference/verb-reference.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    You are starting a fresh agent session against Service Studio's
+    in-process MCP Server; the module `MyModule` is open. List, in order,
+    the exact MCP tool calls (tool name + JSON arguments) you would make to
+    (1) confirm the module's style, (2) read its data model, (3) add an
+    empty server entity `Invoice`, and (4) hand the result to Service
+    Studio for review.
+
+  validation:
+    prerequisites:
+      - point: "Names the MCP tools"
+        description: "The sequence uses `listApps`, `getDataModel`, `applyModelApiCode` and `omlMerge` (in some sensible order), not UI clicks or REST endpoints."
+
+      - point: "Shows JSON arguments per call"
+        description: "Each call is shown with a concrete JSON arguments object."
+
+    skill_scoring:
+      - point: "Calls `createSessionToken` first, once"
+        description: "The very first call is `createSessionToken` (optionally with a `clientName`), which the user approves in Service Studio and whose result text is the token. It is called exactly once for the session and the token is reused for every later call — the answer must NOT request a new token per call."
+
+      - point: "Passes `sessionToken` as a top-level argument"
+        description: "Every later call carries `\"sessionToken\": \"<token>\"` as a top-level argument, a sibling of `input` — not nested inside `input`, and not omitted."
+
+      - point: "`listApps` takes only the token, no `input`"
+        description: "The `listApps` call is `{ \"sessionToken\": \"<token>\" }` with no `input` wrapper, and the style is read from each row's `moduleType` field (e.g. `\"Reactive\"`). Reading a `style` field is the WRONG answer."
+
+      - point: "Every other tool wraps its arguments in `input`"
+        description: "`getDataModel` is `{ \"input\": { \"eSpaceName\": \"MyModule\", \"includeJson\": \"Never\" }, \"sessionToken\": … }` and `applyModelApiCode` is `{ \"input\": { \"eSpaceName\": \"MyModule\", \"code\": \"eSpace => { … }\", \"imports\": [...] }, \"sessionToken\": … }` with all three `input` fields present. Flat arguments (e.g. `{ \"code\": …, \"imports\": … }` or `{ \"includeJson\": \"Never\" }`) are the WRONG answer."
+
+      - point: "`omlMerge` puts both `eSpaceName` and `mutatedOmlPath` inside `input`"
+        description: "The merge call is `{ \"input\": { \"eSpaceName\": \"MyModule\", \"mutatedOmlPath\": \"<path from the apply response>\" }, \"sessionToken\": … }`. Sending `mutatedOmlPath` flat, or omitting `eSpaceName`, is the WRONG answer."
+
+      - point: "Does not call `omlPublish`"
+        description: "The sequence ends at `omlMerge`; it does NOT call `omlPublish`, because the user did not ask to publish."
+
+scenario_4:
+  name: "recovery_from_compile_error"
+
+  codebase:
+    files: []
+
+  prompt: |
+    The agent just sent an `applyModelApiCode` call. The `code` it sent was
+    the bare statement `eSpace.CreateServerEntity("Customer", key);` (no
+    lambda wrapper). No result object came back; instead the call failed
+    with an MCP tool error (`OML_TOOL_CODE_REJECTED`) whose message was:
+
+    ```
+    [-32602] Script compilation failed
+    compilationErrors: (2,1): error CS1002: ; expected
+    compilationErrors: (3,1): error CS8124: Tuple must contain at least two elements.
+    ```
+
+    Walk through what went wrong, what the agent should do to fix it,
+    and whether it needs to call `omlReset` before retrying.
+
+  validation:
+    prerequisites:
+      - point: "Identifies a compile error"
+        description: "The response says the code failed to compile — NOT a runtime error, NOT a validation error. (Compile failures surface as an MCP tool error carrying `Script compilation failed` and `compilationErrors:` lines — there is no result object, so no `exceptionMessage` or `mutatedOmlPath` — and the out file was not written, so the pointer did not advance.)"
+
+      - point: "Proposes a retry"
+        description: "The response says the agent should fix the `code` and submit a new `applyModelApiCode` call."
+
+    skill_scoring:
+      - point: "Diagnoses the missing lambda wrapper"
+        description: "The response identifies the cause as sending body-only statements with no `eSpace => { ... }` wrapper: the host removes the last character and appends `eSpace.Save(...);}`, leaving a dangling brace / no lambda head that can't compile as an `Action<IESpace>`. NOT a generic 'syntax error', NOT 'forgot a semicolon'."
+
+      - point: "Fix is to wrap the statements in a full lambda"
+        description: "The fix proposed is to wrap the statements in a complete `eSpace => { ... }` lambda ending in `}` (and still no `eSpace.Save`). NOT 'add semicolons', NOT 'rename the parameter'."
+
+      - point: "Does NOT call `omlReset` to recover"
+        description: "The response correctly says `omlReset` is NOT needed: failed calls leave the session pointer untouched, so the next attempt resumes from the last good state. `omlReset` is for deliberately dropping an in-flight chain, not for error recovery."
+
+scenario_5:
+  name: "silent_noop_trap"
+
+  read_references:
+    - reference/lambda-contract.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    Walk through the "silent no-op" trap in `applyModelApiCode`:
+    what code shape produces it, why it looks successful, and how
+    the agent should defend against it.
+
+  validation:
+    prerequisites:
+      - point: "Mentions silent no-op concept"
+        description: "The response acknowledges that some calls can look successful without actually mutating the OML."
+
+      - point: "Mentions response fields"
+        description: "The response references specific fields from the tool result (e.g., `exceptionMessage`, `validationMessages`, `mutatedOmlPath`)."
+
+    skill_scoring:
+      - point: "Names the exact trigger"
+        description: "The trigger is a lambda that compiles cleanly and runs but NEVER mutates `eSpace` (e.g. an empty body, or statements that only read or build locals, such as `eSpace => { var n = eSpace.Name; }`). The response identifies this specific cause — NOT 'compilation succeeded but logic was wrong', NOT 'wrong parameters'. Offering `Console.WriteLine(...)` as the example trigger is inaccurate under the current contract: the code sandbox rejects `Console` before compile, so that lambda is a tool error, not a silent no-op."
+
+      - point: "Response shape is successful-looking"
+        description: "The response correctly states that the result has an empty `exceptionMessage`, no `validationMessages` entry of type `Error` (typically `[]`), AND a populated `mutatedOmlPath` — the out file is written and the session pointer advances, so it is indistinguishable from a clean run by field inspection alone. A populated `mutatedOmlPath` must NOT be described as proof the model changed; and the answer must NOT claim `mutatedOmlPath` is absent from the response (it is present — it is the path handed to `omlMerge`). It must NOT describe `compilationErrors` / `validationOutput` result fields — they do not exist."
+
+      - point: "Defence is read-back via `get*`"
+        description: "The defensive step prescribed is: after mutating, call `getDataModel` (or the matching `get*`) and confirm the intended change is actually present. NOT 'check `exceptionMessage`' alone."
+
+      - point: "A clean response is not proof of mutation"
+        description: "The response explicitly says that an empty `exceptionMessage` only means the injected Save ran — it does NOT prove the lambda actually changed anything semantically."
+
+      - point: "Distinguishes the silent no-op from a runner process-crash"
+        description: "If the answer contrasts the no-op with the crash outcome, it gets the discriminator right: a silent no-op WRITES the out file (populated `mutatedOmlPath`, pointer advances), whereas a process-crash returns `mutatedOmlPath: \"\"` with the pointer unchanged. It must NOT conflate the two — 'empty everything' is the crash, not the no-op."
+
+scenario_6:
+  name: "traditional_web_ui_creation"
+
+  read_references:
+    - reference/traditional-ui-creation.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    The open OML module is a **Traditional Web** app (its `listApps`
+    `moduleType` is `"Traditional"`). It has a web flow named `PlansFlow`, a
+    server entity `Post` (with a `Content` text attribute), and an
+    existing screen named `Dashboard`. Using the in-process MCP Server,
+    write the single `applyModelApiCode` call that creates a new
+    Web screen `PostFeed` which fetches `Post` records, shows a text
+    heading plus the post content in a ListRecords, and has a link to the
+    `Dashboard` screen. Show the exact `code` you would send to the tool.
+
+  validation:
+    prerequisites:
+      - point: "Calls applyModelApiCode"
+        description: "The response targets the tool `applyModelApiCode` — NOT Service Studio UI clicks, REST endpoints, or another API."
+
+      - point: "Creates a Web screen named PostFeed"
+        description: "The C# code creates a new screen named `PostFeed` and binds a link to the existing `Dashboard` screen."
+
+      - point: "Fetches Post and lists the records"
+        description: "The code fetches `Post` records and renders them in a list, with the post content shown per row."
+
+    skill_scoring:
+      - point: "Fully-qualifies the Web widget type (CS0104 prophylaxis)"
+        description: "Widget types are written fully-qualified as `OutSystems.Model.UI.Web.Widgets.ITextWidget` (and similarly for other widgets). A bare `ITextWidget` is ambiguous between the Mobile and Web `…Widgets` namespaces (CS0104) and is the WRONG answer. The code must NOT add `using OutSystems.Model.UI.Mobile.Widgets;`."
+
+      - point: "Builds widgets via `CreateWidget<T>` with a Web `IWebWidget` type, not the Reactive NRWidgets"
+        description: "Widgets are created with `CreateWidget<T>` where `T` is an `OutSystems.Model.UI.Web.Widgets.*` type (e.g. `IContainerWidget`, `ITextWidget`, `IListRecordsWidget`). It must NOT pass `ServiceStudio.Plugin.NRWidgets.IContainer` (or any `NRWidgets` type), which fails CS0311 because it does not implement `OutSystems.Model.UI.Web.Widgets.IWebWidget`."
+
+      - point: "Uses `eSpace.WebFlows` + `IWebScreen` (not `MobileFlows`/`IMobileScreen`)"
+        description: "The screen is created on an `eSpace.WebFlows` flow, producing an `IWebScreen` — NOT `eSpace.MobileFlows` / `IMobileScreen`. Using the Mobile flow collection or screen interface on a Traditional module is the WRONG answer."
+
+      - point: "Fetches data via a Preparation + Aggregate node (not `CreateScreenAggregate`)"
+        description: "Data fetch uses `screen.CreatePreparation()` then `prep.CreateNode<OutSystems.Model.Logic.Nodes.IAggregateNode>(...)` (the Traditional Preparation-flow pattern, typically with Start/End nodes). It must NOT use `screen.CreateScreenAggregate(...)`, which is the Mobile API and does not exist on `IWebScreen`."
+
+      - point: "Registers a frequent destination for the link"
+        description: "To wire the link, the answer sets `link.OnClick.Destination = dashboard` AND sets `dashboard.IsFrequentDestination = true` to register the frequent destination (which silences the benign 'Unexpected Link' warning). Setting only `OnClick.Destination` without `IsFrequentDestination` is incomplete."
+
+      - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
+        description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`. The full-lambda contract holds for Traditional Web recipes exactly as for entity recipes."
+
+scenario_7:
+  name: "fk_to_system_entity"
+
+  read_references:
+    - reference/patterns-by-element.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    The open OML module has a server entity `Order`. Using the in-process
+    MCP Server, write the single `applyModelApiCode` call that adds a
+    foreign-key attribute `CreatedBy` to `Order` pointing at the **standard
+    System `User` entity** (so the FK takes User's identifier type). Show the
+    exact `code` you would send to the tool, and name the read-back you
+    would do afterwards to confirm the FK was actually created.
+
+  validation:
+    prerequisites:
+      - point: "Calls applyModelApiCode"
+        description: "The response targets the tool `applyModelApiCode` — NOT Service Studio UI clicks, REST endpoints, or another API."
+
+      - point: "Adds a CreatedBy FK on Order"
+        description: "The C# code creates a `CreatedBy` attribute on the `Order` entity, intended as a foreign key to the System `User` entity."
+
+    skill_scoring:
+      - point: "Resolves User via `eSpace.References.Named(\"(System)\")`, not `eSpace.Entities`"
+        description: "The code reaches the User entity through `eSpace.References.Named(\"(System)\")` (then `.Entities...Named(\"User\")`). It must NOT look up `User` via `eSpace.Entities.OfType<...>().Named(\"User\")` — that collection is local-only and throws `Unable to find object with Name equal to User in collection` for a referenced entity."
+
+      - point: "Casts to `IServerEntitySignature` (the referenced-entity interface)"
+        description: "The User lookup casts via `.OfType<OutSystems.Model.Data.IServerEntitySignature>()` — the signature interface that includes referenced read-only entities. It must NOT cast to the local `IServerEntity` (which `OfType<>` would filter out, making `.Named(\"User\")` throw a misleading 'not found')."
+
+      - point: "Sets `DataType = user.IdentifierType`"
+        description: "The FK attribute's type is bound with `fkAttr.DataType = user.IdentifierType` (the identifier type of the resolved User signature). NOT a hard-coded `eSpace.IntegerType` / `eSpace.LongIntegerType`, NOT `user.Id`."
+
+      - point: "Does NOT call `eSpace.RefreshDependency(...)`"
+        description: "The code does NOT call `eSpace.RefreshDependency(user.GlobalKey)`. In the MCP host that call throws, and it is unnecessary for an already-resident reference. Including it is the WRONG answer."
+
+      - point: "Read-back via `getDataModel` confirms the FK + its DataType"
+        description: "The post-mutation check named is `getDataModel`, used to confirm the `CreatedBy` FK exists AND its `DataType` equals User's identifier type — NOT merely asserting the response was clean, which is indistinguishable from a silent no-op."
+
+      - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
+        description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
+
+scenario_8:
+  name: "runner_process_crash_recovery"
+
+  read_references:
+    - reference/reactive-widget-api.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    The agent sent an `applyModelApiCode` call whose lambda created a
+    screen and bound a chart, touching about a dozen Model API members.
+    The response came back as:
+
+    ```jsonc
+    {
+      "exceptionMessage":   "",
+      "stdoutOutput":       "",
+      "stderrOutput":       "",
+      "validationMessages": [],
+      "mutatedOmlPath":     ""
+    }
+    ```
+
+    Explain what this response means and exactly how the agent should
+    localise the fault. Would adding logging to the lambda help? Say
+    whether it needs to call `omlReset` first.
+
+  validation:
+    prerequisites:
+      - point: "Says the mutation did not land"
+        description: "The response states the OML was not modified / the change did not persist — NOT that the call succeeded."
+
+      - point: "Proposes a concrete next call"
+        description: "The response proposes a specific next `applyModelApiCode` call (or read) rather than only describing the problem."
+
+    skill_scoring:
+      - point: "Names the runner process-crash"
+        description: "The response identifies this as the sidecar/runner process crashing mid-run on an unsupported Model API member — the sixth outcome. It must NOT diagnose it as a compile error, a runtime exception, a validation failure, a silent no-op, or 'no module open in Service Studio' (the session is healthy)."
+
+      - point: "Rejects logging as the localisation tool"
+        description: "The response says logging cannot localise this: a crash returns nothing on any channel, and `Console` / `System.…` output is not even allowed in `code` (the sandbox rejects it before compile). It must NOT advise adding `Console.WriteLine` breadcrumbs or more granular logging to find the failing line, and must NOT infer 'it crashed before step 1' from the empty `stdoutOutput`."
+
+      - point: "Gives the discriminator against a real failure"
+        description: "The response notes that a runtime failure would POPULATE `exceptionMessage`, and a compile failure (or sandbox rejection) arrives as an MCP tool error with no result at all (`Script compilation failed` + `compilationErrors:` lines), whereas a crash is a result that is silent on every channel — empty `exceptionMessage`, `validationMessages: []`, and `mutatedOmlPath: \"\"`. It must NOT refer to `compilationErrors` / `validationOutput` result fields."
+
+      - point: "Recovery is a health probe then a bisect"
+        description: "The prescribed recovery is: first run a trivial health probe — e.g. the throw-probe `eSpace => { throw new Exception(\"PROBE:ok\"); }`, where `PROBE:ok` coming back in `exceptionMessage` proves the session is healthy (a trivial non-crashing lambda that returns a path is equally acceptable) — then re-issue the lambda with ONE risky/unproven member per call until it dies. A probe using `System.Console.WriteLine` is WRONG (sandbox-rejected). It must NOT be 'reread your code carefully', 'retry the same call', or 'restart Service Studio' as the first move."
+
+      - point: "Does NOT call `omlReset`"
+        description: "The response says `omlReset` is not needed: a crash leaves the session pointer unchanged, so the last good state (including earlier successful mutations in the chain) is intact. Calling `omlReset` would discard that chain and is the WRONG answer."
+
+scenario_9:
+  name: "chart_binding_and_reference_probe"
+
+  read_references:
+    - reference/reactive-ui-creation.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    The open module is a **Reactive Web** app. A screen already has an
+    aggregate `GetMoviesWithGenre` whose output columns are aliased
+    `Label` and `Count`. Using the in-process MCP Server, bind a
+    `OutSystemsCharts` Donut chart block instance's `DataPointList` input
+    to that aggregate, mapping `Value` ← `Count` and `Label` ← `Label`.
+    Show the `code`. Also: before you build, how do you verify that the
+    `OutSystemsCharts` blocks are actually available to this module?
+
+  validation:
+    prerequisites:
+      - point: "Calls applyModelApiCode"
+        description: "The response targets the tool `applyModelApiCode` — NOT Service Studio UI clicks or another API."
+
+      - point: "Binds DataPointList from the aggregate"
+        description: "The code sets the chart block instance's `DataPointList` input parameter from `GetMoviesWithGenre.List`, mapping the chart's `Value` and `Label` fields."
+
+    skill_scoring:
+      - point: "Binds via `ExpressionDefinition.Parse(... mapTo ...)`"
+        description: "The binding uses the parser: `ExpressionDefinition.Parse(\"GetMoviesWithGenre.List mapTo { Value: Count, Label: Label }\")` passed to `SetArgumentValue`. The `mapTo` right-hand side references the aggregate's OUTPUT ALIASES (bare, per-row)."
+
+      - point: "Explicitly rejects `new ExpressionDefinition.TypeConversion(...)`"
+        description: "The response does NOT use `new ExpressionDefinition.TypeConversion(\"GetMoviesWithGenre.List\", [...])`. Ideally it names it as a trap: that form COMPILES but hard-crashes the sidecar (empty stdout + empty `mutatedOmlPath`, uncatchable). Emitting the `TypeConversion` form as the answer is a fail even though it is the shape a stale example shows."
+
+      - point: "Availability check enumerates the reference directly"
+        description: "Block availability is verified by enumerating the reference directly — e.g. `eSpace.References.Named(\"OutSystemsCharts\")` and its flows' block signatures (`.MobileFlows.SelectMany(f => f.Nodes).OfType<IMobileBlockSignature>()`). It must NOT invoke `searchModel` — that tool no longer exists in the MCP host (see SKILL.md § 8)."
+
+      - point: "Cannot add the dependency over MCP"
+        description: "If `OutSystemsCharts` is not referenced, the response says the agent is stuck and the user must add the dependency in Service Studio — `AddDependency` cannot pull it in over MCP. It must NOT claim the agent can add the reference itself."
+
+      - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
+        description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
+
+scenario_10:
+  name: "entity_from_scratch_identifier_rules"
+
+  read_references:
+    - reference/patterns-by-element.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    Using the in-process MCP Server, create a brand-new `AuditLog` server
+    entity from scratch: an `Id` Long Integer identifier, a mandatory
+    `EntityName` text attribute, `ExposeReadOnly = true`, and then read
+    back its generated `GetAuditLog` entity action inside the same work.
+    Show the `code`. Also state whether you could instead create the
+    entity in one `applyModelApiCode` call and add the attributes in a
+    second one.
+
+  validation:
+    prerequisites:
+      - point: "Calls applyModelApiCode"
+        description: "The response targets the tool `applyModelApiCode` — NOT Service Studio UI clicks or another API."
+
+      - point: "Creates AuditLog with the requested attributes"
+        description: "The code creates an `AuditLog` server entity with an `Id` Long Integer attribute and a mandatory `EntityName` text attribute."
+
+    skill_scoring:
+      - point: "Entity + attributes + identifier in ONE lambda"
+        description: "The response explicitly answers NO to the split question: an entity saved with no attributes and no identifier does not survive the save (the next read finds it gone), so the shell and its attributes/identifier must land in a single `applyModelApiCode` call. Claiming the two-call split is fine is the WRONG answer."
+
+      - point: "Identifier set via the typed `IdentifierAttribute` setter, not reflection"
+        description: "The identifier is assigned with the typed setter `entity.IdentifierAttribute = idAttr` (live-verified to work in-process for server and static entities). It must NOT use reflection such as `e.GetType().GetProperty(\"Identifier\").SetValue(e, aId)` — reflection members are rejected by the code sandbox before compile."
+
+      - point: "Identifier is set BEFORE touching entity actions"
+        description: "The ordering is explicit: the identifier is set before any `entity.CreateAction` / `entity.EntityActions` access, because those crash the runner while the identifier is null (the auto-generated actions cannot be produced without one). Reading `GetAuditLog` off `EntityActions` by name is preferred over the typed `.CreateAction` getter."
+
+      - point: "Does NOT set `IsAutoNumber = true`"
+        description: "The code does NOT write `attr.IsAutoNumber = true` — `IsAutoNumber` is an `AutoNumber` ENUM, not a bool. Assigning the enum (`attr.IsAutoNumber = AutoNumber.Yes`) is fine and acceptable; leaving it unset is also acceptable."
+
+      - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
+        description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
+
+scenario_11:
+  name: "traditional_to_reactive_migration_cleanup"
+
+  read_references:
+    - reference/traditional-to-reactive-migration-cleanup.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    The open module was just produced by the OutSystems
+    Traditional→Reactive migration tool, and the user asks you to "review
+    and fix the data access in the screens". Its screens each have a dummy
+    `OnStart` Data Action and a `Preparation` client action that calls a
+    `…Srv` server action synchronously. Describe your plan: where you
+    start, how you convert one screen's data access, and what you would
+    hand back to the user rather than doing yourself.
+
+  validation:
+    prerequisites:
+      - point: "Addresses the migrated-module data access"
+        description: "The response engages with converting the synchronous Preparation fetch into an asynchronous Reactive data-fetch pattern."
+
+      - point: "Proposes concrete MCP calls"
+        description: "The plan names specific tools (e.g. `getValidationMessages`, `applyModelApiCode`, `omlMerge`) rather than only describing the problem abstractly."
+
+    skill_scoring:
+      - point: "Starts with `getValidationMessages` filtered to errors"
+        description: "The first step is `getValidationMessages` (`input: { eSpaceName, filter }` narrowed to errors, or unfiltered and then keeping the entries whose `type` is `Error` — values are capitalised, compare case-insensitively) — the errors ARE the work list on a migrated module, and the warnings (`ConsecutiveServerInteractions`, `Block_ClientActionWithServerRequestsOnLifecycleEvent`) drive the data-access review. NOT 'read every screen first', NOT starting with the widget tree."
+
+      - point: "Knows Reactive Data Actions have NO input parameters"
+        description: "The response states that screen/block Data Actions cannot take input parameters — `dataAction.CreateInputParameter(...)` hard-crashes the runner — and that a Data Action instead reads screen scope directly (screen inputs, local variables, client variables are all in scope and sent on each fetch). Proposing a parameterized data action for server-side pagination is the WRONG answer; the mechanism is screen scope + `Refresh Data`."
+
+      - point: "Uses the minimal-rebind repurpose recipe"
+        description: "The conversion repurposes the existing dummy `OnStart` Data Action to do the fetch and KEEPS the migration's local variable as the widget binding surface — rather than rebinding the deeply-nested table widgets. `Preparation` (the `OnAfterFetch` handler) is rewired to COPY from the data action's outputs instead of fetching, and refresh/sort/search/postback actions become `IRefreshDataNode` with `.DataSource` set to the data action."
+
+      - point: "Splits independent datasets into separate Data Actions"
+        description: "The plan gives each independent dataset on a screen its own Data Action + `OnAfterFetch` copy handler, because a shared one means a detail-list pagination refresh re-fetches the record too and resets an edited form — a user-visible regression."
+
+      - point: "Respects the migration-specific crash traps"
+        description: "The response avoids the traps that bite on a migrated module: no `dataAction.CreateInputParameter(...)`, no `screen.ScreenDataSets` enumeration (prefer `screen.DataActions.Named(...)`), no `screen.ClientActions` (use `ScreenActions`), and no recursive `.Widgets` walking — descend one known-container level at a time. It must NOT propose locating a crash with `Console.WriteLine` breadcrumbs (the sandbox rejects `Console`, and a crash returns nothing anyway); bisect by removing statements instead. It must NOT propose reflection (`GetType().GetProperty(...)`, `GetMethod`, `Invoke`) to reach node members — the sandbox rejects it (only `GetType().Name` and `GetType().GetInterfaces()` pass, for diagnosis); use the typed interface members (e.g. `Target`, `CycleTarget`)."
+
+      - point: "One atomic mutation per step, validate after each, fix forward"
+        description: "The workflow applies one mutation per call with `getValidationMessages` after each (to catch saved-but-invalid immediately), fixes forward rather than calling `omlReset` (which would nuke the whole unmerged chain including earlier good fixes), and calls `omlMerge` once at the end with the final `mutatedOmlPath`."
+
+      - point: "Hands layout/CSS work back to the user, or verifies it visually"
+        description: "The response defers visual layout / CSS tweaks to the user in Service Studio, because they are unreliable blind through the Model API (no rendered preview, no visual iteration). If it does make CSS changes, it puts them in the theme stylesheet (not block/screen stylesheets, whose edits often do not publish) and confirms the deployed CSS and a rendered screenshot. It also scopes 'the screens' to the content screens and flags the shared `Common` layout blocks as an optional follow-up rather than converting them unprompted."
+
+scenario_12:
+  name: "untyped_entity_sweep"
+
+  read_references:
+    - reference/patterns-by-element.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    The open OML module has a mix of server entities, one client entity and
+    a couple of static entities. Using the in-process MCP Server, write the
+    single `applyModelApiCode` call that sets the `Description` property to
+    "reviewed" on every **server** entity in the module.
+
+  validation:
+    prerequisites:
+      - point: "Calls applyModelApiCode"
+        description: "The response targets the tool `applyModelApiCode` — NOT Service Studio UI clicks, REST endpoints, or another API."
+
+      - point: "Sets Description on entities"
+        description: "The C# code assigns the string \"reviewed\" to the `Description` property of entities in the open module."
+
+    skill_scoring:
+      - point: "Filters with `OfType<IServerEntity>()` before mutating"
+        description: "The iteration is filtered — `eSpace.Entities.OfType<OutSystems.Model.Data.IServerEntity>()` — so only server entities reach the property setter. A bare `foreach (var e in eSpace.Entities)` with a setter inside is the WRONG answer: static and client entities in the collection make it throw `System.InvalidOperationException: Object is not a Server or Client entity`."
+
+      - point: "Fully qualifies `OutSystems.Model.Data.IServerEntity` or adds the import"
+        description: "The cast is written as `OutSystems.Model.Data.IServerEntity`, OR the call passes `OutSystems.Model.Data` in its `imports` argument. A bare `IServerEntity` with no import is the WRONG answer — `OutSystems.Model.Data` is not one of the host's default imports, so the lambda would not compile."
+
+      - point: "Does not reach for try/catch as the primary fix"
+        description: "The answer's main mechanism is the `OfType<>` filter, not wrapping each assignment in `try`/`catch`. Mentioning try/catch as a secondary safety net is acceptable (the exception IS catchable and surfaces in `exceptionMessage`), but presenting it as THE solution instead of filtering is a weaker answer."
+
+      - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
+        description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
+
+scenario_13:
+  name: "uniform_tool_invocation_failure_is_not_a_code_bug"
+
+  read_references:
+    - reference/verb-reference.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    I'm driving the open module through the in-process MCP Server. Every
+    single tool call I make — `getDataModel`, `applyModelApiCode`,
+    `listApps`, all of them — comes back with exactly
+    `An error occurred invoking '<toolName>'`. I noticed my client is
+    sending extra argument fields I never wrote, with names like
+    `inputPropertyNameValPairs`. What's wrong and what should I do? If I
+    go around the client with one-shot scripts, how do I handle the
+    session?
+
+  validation:
+    prerequisites:
+      - point: "Does not blame the lambda"
+        description: "The answer does not tell the user to rewrite, debug, or reshape their C# lambda as the fix."
+
+      - point: "Identifies a client/transport-layer cause"
+        description: "The answer attributes the failure to the tool-calling layer (the harness's tool wrapper / argument envelope), not to the Model API code or the module contents."
+
+    skill_scoring:
+      - point: "Diagnoses the wrapper as corrupting the argument envelope"
+        description: "The answer explains that the client is injecting argument fields the server never declared, so the host's .NET deserializer rejects the call before any tool runs. The uniformity of the failure across ALL tools is the tell. It should NOT diagnose this as a missing module, an unsigned Service Studio, or `-32099`."
+
+      - point: "Offers the direct-HTTP fallback to `http://127.0.0.1:41820/mcp`"
+        description: "The answer names posting JSON-RPC directly to `http://127.0.0.1:41820/mcp` as the workaround, rather than declaring the situation unrecoverable."
+
+      - point: "Requires `Accept: application/json, text/event-stream`"
+        description: "The answer states the `Accept` header must list BOTH `application/json` and `text/event-stream`, and/or that omitting either yields HTTP 406. Naming only one of the two content types is incomplete."
+
+      - point: "Obtains a `sessionToken` once via `createSessionToken` and passes it on every call"
+        description: "The answer says the session is carried by a token from the `createSessionToken` tool (called once; the user approves it in Service Studio), passed as the top-level `sessionToken` argument on every later `tools/call`, with each tool's own arguments (except `listApps`) wrapped in `input`. It must NOT rely on an `Mcp-Session-Id` response header from `initialize` — the in-process server returns none."
+
+      - point: "Persists the token across processes, outside the repo"
+        description: "If the answer proposes one-shot scripts / `curl` invocations, it says the token must be written to a file and re-read per invocation — because each process starts fresh and an in-memory token would be lost, forcing a new `createSessionToken` (and approval dialog) on every call. It should place that file outside the user's repository (OS temp dir), NOT at a repo-relative path, since the token is an authorization credential that no `.gitignore` rule covers. An answer that only says 'cache it in memory' without addressing process boundaries is incomplete."
+
+      - point: "Does not request a new token per call"
+        description: "The answer reuses the one token across calls and reconnects and does NOT call `createSessionToken` per request or per script run. Requesting a fresh token only when the old one is genuinely rejected (e.g. after a Service Studio restart) is acceptable; looping on token requests is WRONG."
+
+      - point: "Does not frame token reuse as evading the consent prompt"
+        description: "Token reuse is presented as the protocol the server asks for (one token per agent session, honouring a grant the user already gave) — NOT as a trick to suppress or bypass Service Studio's approval dialog. Presenting a real `clientName` is consistent with this; advising the user to spoof a client identity or to keep requesting tokens to get around a refusal is a failing answer."
+
+scenario_14:
+  name: "code_sandbox_and_throw_probe"
+
+  read_references:
+    - reference/lambda-contract.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    The open module `MyModule` is a Reactive Web app with a screen
+    `CustomerDetail`. Before building a form on it, you want to know
+    (a) the type name of every widget directly under the screen's first
+    container, and (b) which settable properties the
+    `ServiceStudio.Plugin.NRWidgets.IInput` widget type exposes. Write the
+    `applyModelApiCode` call (`code` and `imports`) you would send to find
+    out, and explain how the answer gets back to you. Do you need to call
+    `omlReset` afterwards?
+
+  validation:
+    prerequisites:
+      - point: "Calls applyModelApiCode"
+        description: "The response sends an `applyModelApiCode` call to inspect the screen, rather than only guessing."
+
+      - point: "Walks the screen's widgets"
+        description: "The C# code locates `CustomerDetail` and enumerates the widgets under its first container."
+
+    skill_scoring:
+      - point: "No `Console`, `System.…` or reflection in `code`"
+        description: "The `code` does NOT use `Console.WriteLine` (qualified or not), any token written `System.…` (e.g. `System.Text.StringBuilder`), or reflection members (`GetProperties`, `GetProperty`, `GetMethod`, `Invoke`, …). The code sandbox rejects all of these before compile with a tool error. Using any of them is the WRONG answer."
+
+      - point: "Returns the text with the throw-probe"
+        description: "The code builds a string (e.g. with `string.Join` over `w.GetType().Name`) and ends with `throw new Exception(\"PROBE:\" + s);`, and the response says the text comes back in `exceptionMessage`. Returning it through `stdoutOutput`, or through a local variable, is the WRONG answer."
+
+      - point: "Knows the probe commits nothing"
+        description: "The response says a throw-probe saves nothing and leaves the session pointer where it was (`mutatedOmlPath` is empty), so no `omlReset` is needed — and ideally that `validationMessages` for the in-memory model are still returned, which lets a probe preview TrueChange for an edit placed before the throw."
+
+      - point: "`imports` only `OutSystems.Model.*`; NRWidgets types fully qualified"
+        description: "The `imports` array contains only `OutSystems.Model` or its sub-namespaces (or is empty). `ServiceStudio.Plugin.NRWidgets` is NOT in `imports` — the host rejects it with `Import '…' is not allowed` — and NRWidgets types are written fully qualified in the code (e.g. `ServiceStudio.Plugin.NRWidgets.IInput`)."
+
+      - point: "Answers (b) from the generated docs, not reflection"
+        description: "For the property list of `IInput`, the response consults the generated API docs (`docs/ServiceStudio.Plugin.NRWidgets.Generated.cs`) or the reference files instead of reflecting at runtime. Proposing `typeof(...).GetProperties()` is the WRONG answer. (`obj.GetType().Name` for part (a) is allowed.)"
+
+      - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
+        description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
+
+scenario_15:
+  name: "silent_rename_of_taken_names"
+
+  read_references:
+    - reference/patterns-by-element.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    The open module has a server entity `Order` with an `Id` identifier.
+    The user asks for a new server action named `GetOrder` that takes an
+    `OrderId` and returns the matching record, and says a client action
+    will call it by name later. Write the `applyModelApiCode` code, and
+    say exactly what you would check before reporting success.
+
+  validation:
+    prerequisites:
+      - point: "Creates a server action"
+        description: "The C# code creates a server action intended to be named `GetOrder` (or explains why it picks a different name)."
+
+      - point: "Plans a verification step"
+        description: "The response describes some check after the mutation."
+
+    skill_scoring:
+      - point: "Knows the name collides with the entity action"
+        description: "The response recognises that `GetOrder` is already taken by `Order`'s auto-generated entity action (it exists once the entity has an identifier), and that the Model API does NOT fail on the collision — it silently renames the new action (e.g. to `GetOrder2`)."
+
+      - point: "Reads back `.Name` rather than trusting the requested name"
+        description: "The response reads the created action's actual `.Name` back — via a follow-up `getActionNames` / `getServerAction` read, or a throw-probe returning `action.Name` — and uses THAT name for later references and in its report. Choosing a non-colliding name up front (e.g. `GetOrderById`) and telling the user is also acceptable. Assuming the action is called `GetOrder` because the call returned cleanly is the WRONG answer."
+
+      - point: "Does not predict an error for the duplicate"
+        description: "The response does NOT claim the call will throw, fail to compile, or produce a validation error because of the duplicate name — the rename is silent."
+
+      - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
+        description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
+
+scenario_16:
+  name: "reactive_screen_public_and_role_gating"
+
+  read_references:
+    - reference/reactive-ui-creation.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    The open module is a **Reactive Web** app with application roles
+    `Manager` and `Clerk`. Using the in-process MCP Server, in one
+    `applyModelApiCode` call: (1) make the existing screen `Landing`
+    public, so anonymous users can open it, and (2) restrict the existing
+    screen `Approvals` so only `Manager` users can open it. Show the
+    `code` and say how you would confirm the result.
+
+  validation:
+    prerequisites:
+      - point: "Calls applyModelApiCode"
+        description: "The response targets `applyModelApiCode` — NOT Service Studio UI clicks or another API."
+
+      - point: "Touches both screens"
+        description: "The code changes the access settings of both `Landing` and `Approvals`."
+
+    skill_scoring:
+      - point: "Makes `Landing` public with the Anonymous role"
+        description: "The code adds the Anonymous system role to the screen's roles (`landing.Roles.Add(eSpace.AnonymousRole)`), which is what Service Studio's Anonymous checkbox stores. Setting `landing.AnonymousAccess = true` is the WRONG answer: omlMerge drops it and the live screen stays authenticated-only."
+
+      - point: "Removes `Registered` (and `Clerk`) from `Approvals`"
+        description: "The code REMOVES `eSpace.RegisteredRole` — and the `Clerk` role — from `approvals.Roles`, leaving `Manager`, because screens carry `Registered` plus every application role by default. Merely adding `Manager` (or checking it is present) leaves every logged-in user with access and is the WRONG answer."
+
+      - point: "Verifies on the live module after merging"
+        description: "The confirmation step re-reads the screens' roles AFTER omlMerge (the pointer is cleared, so the read shows what Service Studio kept) — not only the pre-merge copy or a clean response. A public screen should read Anonymous (usually with Registered); Approvals should read Manager only."
+
+      - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
+        description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
+
+scenario_17:
+  name: "rest_exposed_method_ships_start_end"
+
+  read_references:
+    - reference/patterns-by-element.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    Using the in-process MCP Server, in one `applyModelApiCode` call:
+    expose a REST API `OrdersAPI` with a GET method `GetOrderCount` whose
+    flow is Start → Assign (sets output `Count` to 0) → End, and also
+    create a server action `Recalculate` whose flow is Start → End. Show
+    the `code` and `imports`.
+
+  validation:
+    prerequisites:
+      - point: "Creates the REST API and method"
+        description: "The code creates an exposed REST integration `OrdersAPI` with a method `GetOrderCount`."
+
+      - point: "Creates the server action"
+        description: "The code creates a server action `Recalculate`."
+
+    skill_scoring:
+      - point: "Uses `CreateIntegration<ServiceStudio.Plugin.RESTService.IRestService>` + `CreateAction`"
+        description: "The REST API is created with `eSpace.CreateIntegration<ServiceStudio.Plugin.RESTService.IRestService>(…)` and the method with `.CreateAction(…)` (with its HTTP method set to GET), the plugin type written fully qualified. `ServiceStudio.Plugin.RESTService` must NOT appear in `imports` — only `OutSystems.Model` namespaces are allowed there."
+
+      - point: "Deletes the REST method's shipped Start/End before building"
+        description: "The response knows a new REST method already ships with a Start and an End node, and deletes the method's existing `Nodes` (e.g. `foreach (var n in m.Nodes.ToList()) n.Delete();`) before creating its own Start → Assign → End. Reusing the shipped Start/End instead of creating new ones is also acceptable. Creating a second Start node on top of the shipped one is the WRONG answer."
+
+      - point: "Creates Start and End for the server action"
+        description: "For `Recalculate` the code creates both nodes itself (e.g. `CreateNode<IStartNode>()` / `CreateNode<IEndNode>()`) and wires Start → End, because server, client and screen actions ship with NO nodes. Assuming the server action already has a Start/End is the WRONG answer."
+
+      - point: "Positions nodes explicitly"
+        description: "The code gives the hand-created nodes distinct positions (or the response says layout must be done by hand) — it does NOT rely on the host's `Action Flow auto arrange completed` log line, which leaves hand-wired nodes stacked at one coordinate."
+
+      - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
+        description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
+
+scenario_18:
+  name: "exception_handler_needs_own_end"
+
+  read_references:
+    - reference/patterns-by-element.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    The open module has a server action `ImportData` whose flow is
+    Start → Run Server Action `ParseFile` → End, and a Boolean output
+    parameter `Success`. Using the in-process MCP Server, add an
+    `AllExceptions` handler to `ImportData` that sets `Success` to False.
+    Show the `code`, and say what you would check in the response.
+
+  validation:
+    prerequisites:
+      - point: "Adds an exception handler"
+        description: "The code creates an exception handler node on `ImportData`'s flow and an Assign that sets `Success` to False."
+
+      - point: "Checks the response"
+        description: "The response names at least one field of the result it would inspect."
+
+    skill_scoring:
+      - point: "The handler path ends in its own End node"
+        description: "The code creates a NEW End node for the handler path (handler → Assign → new End). Wiring the Assign to the main flow's existing End, or leaving the handler path without an End, is the WRONG answer — TrueChange flags it (`InvalidFlow_BadErrHandlerPath` / `InvalidFlow_MalformedAction`)."
+
+      - point: "Checks `validationMessages` for `Error` entries"
+        description: "The response checks `validationMessages` for entries whose `type` is `Error` (capitalised; compare case-insensitively) as the saved-but-invalid guard, not only `exceptionMessage` / `mutatedOmlPath`."
+
+      - point: "Does not touch the existing ExecuteAction arguments"
+        description: "The code does not re-create or add Arguments to the existing `ParseFile` call — setting `ExecuteAction.Action` auto-creates them. (Neutral if the answer doesn't touch that node at all.)"
+
+      - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
+        description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
+
+scenario_19:
+  name: "o11_bpt_process_creation"
+
+  codebase:
+    files: []
+
+  prompt: |
+    In the O11 Reactive module I have open in Service Studio, use the MCP
+    Server to create a BPT process `OrderApproval` that starts when an
+    `Order` record is created, with a Human Activity `Approve` (for the
+    `Manager` role, on the `ReviewOrder` screen) followed by an Automatic
+    Activity `Notify`. Show the `applyModelApiCode` lambda.
+
+  validation:
+    prerequisites:
+      - point: "Engages with the request"
+        description: "The response produces an `applyModelApiCode` lambda that creates the `OrderApproval` process rather than declining."
+
+      - point: "Full lambda, no Save"
+        description: "The code is a full `eSpace => { ... }` lambda with no `eSpace.Save(...)`."
+
+    skill_scoring:
+      - point: "Uses the O11 process API"
+        description: "The lambda calls `eSpace.CreateProcess(\"OrderApproval\")` (OutSystems.Model.Processes) — NOT `eSpace.CreateBusinessProcess`, which is the ODC Workflows API and throws on O11 (`Process objects can't be children of Module objects`)."
+
+      - point: "Sets Launch On Create"
+        description: "The lambda sets `LaunchOn.Entity` to the Order entity and `LaunchOn.Action = OutSystems.Model.Processes.EntityActionKind.Create` (and may note this auto-creates the `OrderId` process input)."
+
+      - point: "Node types from Processes.Nodes, wired with Targets"
+        description: "Nodes are created with `CreateNode<OutSystems.Model.Processes.Nodes.IStartNode|IHumanActivityNode|IAutomaticActivityNode|IEndNode>()` and wired with `node.Targets.Add(next)` — NOT `ConnectedBelow`, which throws `Node doesn't have a target property` on process nodes."
+
+      - point: "Human activity roles and destination"
+        description: "The human activity sets `Destination` to the ReviewOrder screen, adds the Manager role, and removes `eSpace.RegisteredRole` (new human activities default to Registered)."
+
+      - point: "Automatic activity reuses its Start"
+        description: "Any logic inside the automatic activity starts from the Start node it already contains (`au.Nodes.OfType<OutSystems.Model.Logic.Nodes.IStartNode>().Single()`) instead of creating a second Start (`InvalidFlow_TooManyNodes`)."
+
+      - point: "Verifies after applying"
+        description: "The response checks `validationMessages` / `getValidationMessages` and reads the process back (e.g. `getSerializedObjectByNameAndType` with `OutSystems.Model.Processes.IProcess`)."
