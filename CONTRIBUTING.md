@@ -151,7 +151,7 @@ rows pointing at whatever the discovery story turns out to be.
 
 The repository is early — no branch-naming or commit-message convention is
 established yet, and `.github/` holds Copilot configuration rather than PR
-templates or workflows (there is no CI). Use the standard flow: branch off `main`,
+templates or workflows (there is no CI). Use the standard flow: fork off `main`,
 open a PR against `main`, and get it reviewed before merge; CODEOWNERS requests the
 `rd-o11-frontend-runtime` team automatically. Keep changes scoped to the skill content and avoid committing
 anything environment-specific (the `.gitignore` covers Visual Studio noise, not
