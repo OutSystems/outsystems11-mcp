@@ -281,6 +281,10 @@ since it adds one action onto an already-created `IRestService`).
   the second attempt, after fixing the Start/End and leading-slash issues from
   § 1 on the first. Builds all five plain-CRUD endpoints for one entity in a
   single `applyModelApiCode` call, creating the `IRestService` itself.
+- [`examples/AddRestApiWithNotFound.cs`](examples/AddRestApiWithNotFound.cs) — the
+  same CRUD API with a real `404` on missing ids for Get / Update / Delete via
+  `HTTPRequestHandler.SetStatusCode`. Requires that Forge component as a
+  reference (§ 7.2).
 - [`examples/AddCompositeCreateEndpoint.cs`](examples/AddCompositeCreateEndpoint.cs) —
   the § 3.1 pattern: one composite "create header + lines" REST action added
   onto an *existing* `IRestService` (looked up via
@@ -341,7 +345,8 @@ merged (`omlMerge`), published (`omlPublish`) and called with `curl`.
 | `GET /Products` | `200`, bare JSON array of records |
 | `GET /Products/1` | `200`, record object; identical for Identifier-typed and Long Integer-typed `{Id}` |
 | `GET /Products/abc` | `400` `{"Errors":["Failed to parse. 'LongInteger' compatible data type is required for parameter 'Id'."],"StatusCode":400}` — same for both id types |
-| `GET /Products/999999` (no such row) | **`500`** `{"Errors":["Error executing query."],"StatusCode":500}` — not 404 (see § 7) |
+| `GET /Products/999999` (no such row, plain recipe) | **`500`** `{"Errors":["Error executing query."],"StatusCode":500}` — use the § 7.2 guard for a real `404` |
+| `GET` / `PUT` / `DELETE /Products/999999` with the § 7.2 guard | **`404`** (Get body: default record; Put/Delete: empty) |
 | `POST /TestOrders` (composite) | `200`, body is the bare id, e.g. `1` |
 | `GET <base URL>` | `301` to the generated documentation page when `ShowDocumentation = Yes` |
 
@@ -376,11 +381,23 @@ merged (`omlMerge`), published (`omlPublish`) and called with `curl`.
    unauthenticated `POST` created data. TrueChange does not flag it. Switch to
    `Basic` or `Custom` (and implement the `OnAuthentication` callback) before
    the API is published anywhere other people can reach.
-2. **Plan for the 500-on-missing-id behaviour.** `Get<Entity>` raises when the
-   row does not exist, so the recipe's Get endpoint answers `500`, not `404`.
-   If callers need to tell "not found" from "server broke", replace the
-   `GetAction` call with an aggregate filtered on `Id` and branch on
-   `GetX.List.Empty` before assigning the output.
+2. **A real HTTP 404 needs the HTTPRequestHandler component.** `Get<Entity>`
+   raises when the row does not exist, so the plain recipe answers `500` with
+   `Error executing query.`. The Model API itself cannot fix that: `(System)`
+   has no status-setting action, a REST output's `SendIn` is only `Body` or
+   `Header`, and the built-in exceptions (`AllExceptions`, `Database`,
+   `Security`, `NotRegistered`, `Communication`) include nothing for "not
+   found". What works (verified 2026-10-13): add the Forge component
+   **HTTPRequestHandler** as a reference of the module (a Service Studio step
+   — Manage Dependencies), then in each id-based method look the row up with
+   an aggregate (`FindX`, filter `X.Id = Id`), branch on `FindX.List.Empty`,
+   and on the true branch call `HTTPRequestHandler.SetStatusCode` with
+   `StatusCode = 404` and end on its **own** End node. Apply the same guard
+   to Update and Delete — without it a missing id is also a 500. Full lambda:
+   [`examples/AddRestApiWithNotFound.cs`](examples/AddRestApiWithNotFound.cs).
+   Details observed: `SetStatusCode` takes one input, `StatusCode`; the 404
+   body is still the output record with default values (`{"Id":0,"Name":""…}`),
+   Update/Delete 404s have an empty body; a non-numeric id is still `400`.
 3. **Don't expose the entity record as the contract unless you mean to.** The
    examples return and accept the entity as-is, so every attribute (including
    internal ones) is part of the public API. For anything beyond a demo,
