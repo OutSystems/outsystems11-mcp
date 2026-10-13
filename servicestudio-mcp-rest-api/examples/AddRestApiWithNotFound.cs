@@ -1,20 +1,26 @@
-// Full CRUD REST API over a public server entity, with a real HTTP 404 on Get / Update / Delete
-// when the id does not exist. Verified live 2026-10-13 against entity "Product" (list, get, create,
-// update, delete, and 404 on missing ids; a non-numeric id still returns 400).
+// Full CRUD REST API over a public server entity, with a real HTTP 404 and the standard error body
+// {"Errors":["Product not found"],"StatusCode":404} on Get / Update / Delete when the id does not
+// exist. Verified live 2026-10-13 against entity "Product" (list, get, create, update, delete, 404 on
+// missing ids; a non-numeric id still returns 400).
 // Context: the module has a public server entity "Product" with an identifier attribute, AND a
-// reference to the Forge component HTTPRequestHandler (it provides the SetStatusCode action; the
-// Model API / (System) cannot set a response status on its own — see SKILL.md § 7.2).
-// Template: Product -> <YourEntity>, ProductAPI -> <YourEntity>API, Products -> <YourEntities>.
+// reference to the Forge component HTTPRequestHandler (it provides SetStatusCode; the Model API and
+// (System) cannot set a response status on their own — see SKILL.md § 7.2).
+// How the 404 body works: SetStatusCode(404) alone leaves the normal output record (default values)
+// as the body; raising a user exception right after it makes the platform send its standard error
+// JSON and KEEP the status you set.
+// Template: Product -> <YourEntity>, ProductAPI -> <YourEntity>API, Products -> <YourEntities>,
+// ProductNotFound -> <YourEntity>NotFound.
 // Pass imports: [] — ServiceStudio.Plugin.RESTService cannot be imported.
-// Re-applying: the first statement deletes an existing integration of the same name (delete and
-// recreate, SKILL.md gotcha #7). Remove that line when creating the API for the first time.
-// Note: a 404 response still carries the output record's default values as the body.
+// Re-applying: the first statements create the user exception and delete an existing integration of
+// the same name (delete and recreate, SKILL.md gotcha #7). When the exception already exists, replace
+// CreateUserException with eSpace.UserExceptions.Named("ProductNotFound").
 eSpace => {
     var product = eSpace.Entities.OfType<OutSystems.Model.Data.IServerEntity>().Named("Product");
     var productListType = eSpace.GetOrCreateListType(product);
     var setStatus = eSpace.References.Named("HTTPRequestHandler").ServerActions.Named("SetStatusCode");
     var statusParam = setStatus.InputParameters.Named("StatusCode");
 
+    var notFound = eSpace.CreateUserException("ProductNotFound");
     eSpace.Integrations.OfType<ServiceStudio.Plugin.RESTService.IRestService>().Named("ProductAPI").Delete();
 
     var api = eSpace.CreateIntegration<ServiceStudio.Plugin.RESTService.IRestService>("ProductAPI");
@@ -57,14 +63,16 @@ eSpace => {
     gSet.Action = setStatus;
     gSet.SetArgumentValue(statusParam, "404");
     gIf.TrueTarget = gSet;
-    var gEnd404 = get.CreateNode<OutSystems.Model.Logic.Nodes.IEndNode>().ConnectedBelow(gSet);
+    var gRaise = get.CreateNode<OutSystems.Model.Logic.Nodes.IRaiseExceptionNode>().ConnectedBelow(gSet);
+    gRaise.Exception = notFound;
+    gRaise.SetExceptionMessage("\"Product not found\"");
     var gExec = get.CreateNode<OutSystems.Model.Logic.Nodes.IExecuteServerActionNode>("GetEntity").Below(gIf);
     gIf.FalseTarget = gExec;
     gExec.Action = product.GetAction;
     gExec.SetArgumentValue(product.GetAction.InputParameters.Named("Id"), "Id");
     var gAsg = get.CreateNode<OutSystems.Model.Logic.Nodes.IAssignNode>().ConnectedBelow(gExec);
     gAsg.CreateAssignment("Product", "GetEntity.Record");
-    var gEnd = get.Nodes.OfType<OutSystems.Model.Logic.Nodes.IEndNode>().First(n => n != gEnd404);
+    var gEnd = get.Nodes.OfType<OutSystems.Model.Logic.Nodes.IEndNode>().First();
     gEnd.Below(gAsg); gAsg.Target = gEnd;
     var gOut = get.CreateOutputParameter("Product"); gOut.DataType = product;
     gOut.SendIn = ServiceStudio.Plugin.RESTService.Enumerations.SendIn.Body;
@@ -105,14 +113,16 @@ eSpace => {
     uSet.Action = setStatus;
     uSet.SetArgumentValue(statusParam, "404");
     uIf.TrueTarget = uSet;
-    var uEnd404 = update.CreateNode<OutSystems.Model.Logic.Nodes.IEndNode>().ConnectedBelow(uSet);
+    var uRaise = update.CreateNode<OutSystems.Model.Logic.Nodes.IRaiseExceptionNode>().ConnectedBelow(uSet);
+    uRaise.Exception = notFound;
+    uRaise.SetExceptionMessage("\"Product not found\"");
     var uStamp = update.CreateNode<OutSystems.Model.Logic.Nodes.IAssignNode>("SetId").Below(uIf);
     uIf.FalseTarget = uStamp;
     uStamp.CreateAssignment("Product.Id", "Id");
     var uExec = update.CreateNode<OutSystems.Model.Logic.Nodes.IExecuteServerActionNode>("UpdateEntity").ConnectedBelow(uStamp);
     uExec.Action = product.UpdateAction;
     uExec.SetArgumentValue(product.UpdateAction.InputParameters.Named("Source"), "Product");
-    var uEnd = update.Nodes.OfType<OutSystems.Model.Logic.Nodes.IEndNode>().First(n => n != uEnd404);
+    var uEnd = update.Nodes.OfType<OutSystems.Model.Logic.Nodes.IEndNode>().First();
     uEnd.Below(uExec); uExec.Target = uEnd;
 
     /* ---------- DELETE /Products/{Id}  (404 when missing) ---------- */
@@ -132,11 +142,13 @@ eSpace => {
     dSet.Action = setStatus;
     dSet.SetArgumentValue(statusParam, "404");
     dIf.TrueTarget = dSet;
-    var dEnd404 = del.CreateNode<OutSystems.Model.Logic.Nodes.IEndNode>().ConnectedBelow(dSet);
+    var dRaise = del.CreateNode<OutSystems.Model.Logic.Nodes.IRaiseExceptionNode>().ConnectedBelow(dSet);
+    dRaise.Exception = notFound;
+    dRaise.SetExceptionMessage("\"Product not found\"");
     var dExec = del.CreateNode<OutSystems.Model.Logic.Nodes.IExecuteServerActionNode>("DeleteEntity").Below(dIf);
     dIf.FalseTarget = dExec;
     dExec.Action = product.DeleteAction;
     dExec.SetArgumentValue(product.DeleteAction.InputParameters.Named("Id"), "Id");
-    var dEnd = del.Nodes.OfType<OutSystems.Model.Logic.Nodes.IEndNode>().First(n => n != dEnd404);
+    var dEnd = del.Nodes.OfType<OutSystems.Model.Logic.Nodes.IEndNode>().First();
     dEnd.Below(dExec); dExec.Target = dEnd;
 }

@@ -282,8 +282,9 @@ since it adds one action onto an already-created `IRestService`).
   § 1 on the first. Builds all five plain-CRUD endpoints for one entity in a
   single `applyModelApiCode` call, creating the `IRestService` itself.
 - [`examples/AddRestApiWithNotFound.cs`](examples/AddRestApiWithNotFound.cs) — the
-  same CRUD API with a real `404` on missing ids for Get / Update / Delete via
-  `HTTPRequestHandler.SetStatusCode`. Requires that Forge component as a
+  same CRUD API with a real `404` and a standard error body on missing ids for
+  Get / Update / Delete via `HTTPRequestHandler.SetStatusCode` plus a raised user
+  exception. Requires that Forge component as a
   reference (§ 7.2).
 - [`examples/AddCompositeCreateEndpoint.cs`](examples/AddCompositeCreateEndpoint.cs) —
   the § 3.1 pattern: one composite "create header + lines" REST action added
@@ -346,7 +347,7 @@ merged (`omlMerge`), published (`omlPublish`) and called with `curl`.
 | `GET /Products/1` | `200`, record object; identical for Identifier-typed and Long Integer-typed `{Id}` |
 | `GET /Products/abc` | `400` `{"Errors":["Failed to parse. 'LongInteger' compatible data type is required for parameter 'Id'."],"StatusCode":400}` — same for both id types |
 | `GET /Products/999999` (no such row, plain recipe) | **`500`** `{"Errors":["Error executing query."],"StatusCode":500}` — use the § 7.2 guard for a real `404` |
-| `GET` / `PUT` / `DELETE /Products/999999` with the § 7.2 guard | **`404`** (Get body: default record; Put/Delete: empty) |
+| `GET` / `PUT` / `DELETE /Products/999999` with the § 7.2 guard | **`404`** `{"Errors":["Product not found"],"StatusCode":404}` (status set by `SetStatusCode`, body by the raised user exception) |
 | `POST /TestOrders` (composite) | `200`, body is the bare id, e.g. `1` |
 | `GET <base URL>` | `301` to the generated documentation page when `ShowDocumentation = Yes` |
 
@@ -395,9 +396,15 @@ merged (`omlMerge`), published (`omlPublish`) and called with `curl`.
    `StatusCode = 404` and end on its **own** End node. Apply the same guard
    to Update and Delete — without it a missing id is also a 500. Full lambda:
    [`examples/AddRestApiWithNotFound.cs`](examples/AddRestApiWithNotFound.cs).
-   Details observed: `SetStatusCode` takes one input, `StatusCode`; the 404
-   body is still the output record with default values (`{"Id":0,"Name":""…}`),
-   Update/Delete 404s have an empty body; a non-numeric id is still `400`.
+   For a clean body, raise a user exception (for example `ProductNotFound`,
+   message `"Product not found"`) immediately after `SetStatusCode` and end the
+   branch there — no separate End node. The platform then sends its standard
+   error JSON and **keeps** the status you set: `404`
+   `{"Errors":["Product not found"],"StatusCode":404}`, same shape as its own
+   400/500 errors. Without the raise, a Get 404 carries the output record's
+   default values (`{"Id":0,"Name":""…}`) and Update/Delete 404s an empty
+   body. `SetStatusCode` takes one input, `StatusCode`; a non-numeric id is
+   still `400`.
 3. **Don't expose the entity record as the contract unless you mean to.** The
    examples return and accept the entity as-is, so every attribute (including
    internal ones) is part of the public API. For anything beyond a demo,
