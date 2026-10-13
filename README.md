@@ -102,10 +102,10 @@ The dialog then shows the **MCP server URL** and the exact **Claude Code command
 Before you open Claude Code and add the skill, register the Service Studio MCP server so your agent knows where to reach it. In a terminal, run the command you copied in step 2 (or type it out):
 
 ```
-claude mcp add --transport http servicestudio http://127.0.0.1:41820/mcp
+claude mcp add --transport http servicestudio http://127.0.0.1:41820/mcp --scope user
 ```
 
-This registers an HTTP MCP server named `servicestudio` pointing at the local endpoint exposed by Service Studio. Service Studio must be running with a module open **and its MCP server started** (step 2) for the connection to succeed.
+This registers an HTTP MCP server named `servicestudio`, across every project and directory, pointing at the local endpoint exposed by Service Studio. Service Studio must be running with a module open **and its MCP server started** (step 2) for the connection to succeed.
 
 > This is what you want for everyday use: the skill installs globally, so you'll be running Claude Code from your own projects. If you are working **inside this repository** instead, you can skip the command — the committed `.mcp.json` already declares the same server and `.claude/settings.json` pre-approves it.
 

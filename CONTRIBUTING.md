@@ -174,6 +174,6 @@ together in the same PR:
 
 | Command | Description |
 | --- | --- |
-| `claude mcp add --transport http servicestudio` http://127.0.0.1:41820/mcp` | Register the Service Studio MCP server (one-time, per README) |
+| `claude mcp add --transport http servicestudio http://127.0.0.1:41820/mcp --scope user` | Register the Service Studio MCP server (one-time, per README) |
 | `/mcp reconnect servicestudio` | Reconnect the agent to Service Studio if the connection drops |
 | `/skill-forge:run-eval skills/servicestudio-mcp-oml/SKILL.md` | Run the effectiveness eval (requires the external `skill-forge` plugin) |
