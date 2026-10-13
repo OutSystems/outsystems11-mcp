@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate an applyModelApiCode lambda that seeds server entities on publish.
 
-Usage:  generate_seed.py spec.json > seed.cs
+Usage:  generate_inline_seed.py spec.json > seed.cs
 
 The output is a full `eSpace => { ... }` lambda (no eSpace.Save) that creates
   * a server action <action> with a "tables are empty" guard, optional lookup
