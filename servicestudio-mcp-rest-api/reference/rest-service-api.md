@@ -2,12 +2,15 @@
 
 Everything here is fully-qualified as it must appear in `applyModelApiCode` code
 (remember: `imports` can't include `ServiceStudio.Plugin.RESTService`, so no
-`using` shortcuts — see SKILL.md § 1.2). Reflected from
+`using` shortcuts — see SKILL.md § 1, item 2). Reflected from
 `ServiceStudio.Plugin.RESTService.Generated.cs` and
 `ServiceStudio.Plugin.RESTService.Enumerations.Generated.cs` in the
 `servicestudio-mcp-oml` skill's `docs/` — those files are the source of truth if
-this drifts; this file exists because the `servicestudio-mcp-oml` SKILL.md and
-reference files never mention this namespace at all.
+this drifts. `servicestudio-mcp-oml`'s
+`reference/logic-and-integrations.md` ("Exposed REST APIs") covers the basics;
+this file is a single-page, REST-only digest of the generated signatures plus
+the entity CRUD action table, kept here so the skill stands alone. Enum values
+and member lists were re-checked against the generated files on 2026-10-13.
 
 ## Creating the integration
 
@@ -50,7 +53,7 @@ public interface IRestServiceAction : OutSystems.Model.Logic.Integrations.IExpos
     // IExposedAction : IAction, so this has everything a server action has:
     // Nodes, CreateNode<T>, CreateInputParameter, CreateOutputParameter,
     // CreateLocalVariable — plus an ALREADY-PRESENT Start node and End node
-    // (see SKILL.md § 1.3 — do not create new ones).
+    // (see SKILL.md § 1, item 3 — reuse them, don't create new ones).
     string URL { get; set; }                              // derived — don't set
     string URLPath { get; set; }                           // SET THIS — must start with '/'
     ServiceStudio.Plugin.RESTService.Enumerations.HTTPMethod HTTPMethod { get; set; }
@@ -108,7 +111,7 @@ because the `Get` action's output name is a common wrong guess:
 
 | Property | Returns | Input param(s) | Output param(s) |
 |---|---|---|---|
-| `entity.GetAction` | `IEntityActionSignature` | `Id` | **`Record`** |
+| `entity.GetAction` | `IEntityActionSignature` | `Id` | **`Record`** (an anonymous structure holding the entity; `GetX.Record` and `GetX.Record.<Entity>` both assign to an entity-typed output — verified 2026-10-13) |
 | `entity.CreateAction` | `IEntityActionSignature` | `Source` | `Id` |
 | `entity.UpdateAction` | `IEntityActionSignature` | `Source` | — |
 | `entity.DeleteAction` | `IEntityActionSignature` | `Id` | — |

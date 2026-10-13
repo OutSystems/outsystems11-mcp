@@ -7,13 +7,15 @@ description: >-
   wired straight to the entity's own auto-generated CRUD actions, plus
   composite "create a header with detail lines in one call" endpoints for
   master-detail entities (ForEach + accumulator pattern). Captures gotchas
-  discovered the hard way (undocumented `CreateIntegration<IRestService>` entry
-  point, the "More than one Start" / "End must have at least one incoming
+  discovered the hard way (the `CreateIntegration<IRestService>` entry point,
+  the "More than one Start" / "End must have at least one incoming
   connector" node trap, the leading-slash `URLPath` requirement, the disallowed
   `imports` namespace, the one-Body-input-per-method limit, the "don't splice a
   node into an already-merged flow" trap, and the real parameter names of an
   entity's Get/Create/Update/Delete actions) so a REST API gets built in one or
-  two clean applies instead of three or four. Use
+  two clean applies instead of three or four. Verified end to end against a
+  published module (HTTP calls, composite create, identifier URL parameters on
+  the wire, error status codes). Use
   whenever the user asks to "expose an entity as a REST API", "create a REST
   API for X", "add CRUD endpoints for X", "build a full API exposing this
   entity", "create an endpoint that creates an order with its lines", or
@@ -25,7 +27,7 @@ license: MIT
 compatibility: Requires the `servicestudio` MCP server connected to a running EAP Service Studio build with an O11 module open, and the `servicestudio-mcp-oml` skill (same `applyModelApiCode` contract, same `eSpaceName`/`sessionToken` conventions — this skill does not restate them).
 metadata:
   author: arjanwaard
-  origin: distilled from a live session building ShippingCompanyAPI over a ShippingCompany entity in module "aademo" (2026-09-11) — three applyModelApiCode attempts before it saved cleanly; extended the same session building OrderAPI's composite CreateOrder endpoint (Order + OrderLine header/detail) — one more gotcha (single Body input per method) found and folded in.
+  origin: distilled from a live session building ShippingCompanyAPI over a ShippingCompany entity in module "aademo" (2026-09-11) — three applyModelApiCode attempts before it saved cleanly; extended the same session building OrderAPI's composite CreateOrder endpoint (Order + OrderLine header/detail) — one more gotcha (single Body input per method) found and folded in. Re-verified live 2026-10-13 on Service Studio 11.55.92 against module "aademo": the CRUD recipe and the composite create were published and exercised over HTTP; findings in section 6.
 ---
 
 # Expose an O11 entity as a REST API
@@ -34,26 +36,31 @@ This is a companion to **`servicestudio-mcp-oml`** — read that skill first for
 full-lambda contract (`eSpace => { ... }`, no `eSpace.Save`), the tool catalogue
 (`applyModelApiCode`, `getDataModel`, `runQuery`, `omlReset`, `omlMerge`), and the
 session-pointer/silent-no-op traps. Everything below assumes you already know that
-contract and is scoped to the one thing it doesn't cover: **Exposed REST APIs**
-(`ServiceStudio.Plugin.RESTService` — a real, working part of the Model API that
-isn't documented anywhere in `servicestudio-mcp-oml`'s reference files, because
-nobody had gone looking for it until now).
+contract. `servicestudio-mcp-oml` covers the basics of **Exposed REST APIs**
+(`ServiceStudio.Plugin.RESTService`) in
+[`reference/logic-and-integrations.md`](../servicestudio-mcp-oml/reference/logic-and-integrations.md)
+("Exposed REST APIs") and `examples/AddExposedRestApi.cs` (one GET method).
+This skill goes further: a full CRUD + List recipe, composite master-detail
+create, and the gotchas you only hit once you build several methods. Items
+marked *(also in OML)* repeat OML on purpose so this skill stands alone.
 
 ## Contents
 
-- [§ 1 — The five things that will bite you](#1-the-five-things-that-will-bite-you)
+- [§ 1 — The things that will bite you](#1-the-things-that-will-bite-you)
 - [§ 2 — Before you write code: confirm the entity's action signatures](#2-before-you-write-code-confirm-the-entitys-action-signatures)
 - [§ 3 — The recipe](#3-the-recipe)
 - [§ 3.1 — Composite create for a master-detail entity pair](#31-composite-create-for-a-master-detail-entity-pair)
 - [§ 4 — Worked examples](#4-worked-examples)
 - [§ 5 — Recovery](#5-recovery)
+- [§ 6 — Verified live behaviour](#6-verified-live-behaviour)
+- [§ 7 — Advice before you ship](#7-advice-before-you-ship)
 
-## 1. The five things that will bite you
+## 1. The things that will bite you
 
 Each of these cost a failed `applyModelApiCode` call the first time. Read them
 before you write code, not after the error comes back.
 
-1. **Creating the API at all is undocumented but simple.** There is no
+1. **The entry point is the generic integration factory** *(also in OML)*. There is no
    `eSpace.RestServices` collection and no `eSpace.CreateRestService(...)` — the
    actual entry point is the *generic* integration factory:
    ```csharp
@@ -66,7 +73,7 @@ before you write code, not after the error comes back.
    `ServiceStudio.Plugin.RESTService.Enumerations`. Full enum values and the
    `IRestService` / `IRestServiceAction` member list: [`reference/rest-service-api.md`](reference/rest-service-api.md).
 
-2. **You cannot import that namespace.** `applyModelApiCode`'s `imports` array
+2. **You cannot import that namespace** *(also in OML)*. `applyModelApiCode`'s `imports` array
    only accepts `OutSystems.Model` or its sub-namespaces —
    `ServiceStudio.Plugin.RESTService` is rejected outright:
    > `Import 'ServiceStudio.Plugin.RESTService' is not allowed. Only
@@ -75,7 +82,7 @@ before you write code, not after the error comes back.
    type inline in the code string instead. This is more verbose but it's the
    only path that compiles.
 
-3. **`api.CreateAction("Name")` already has a Start node and an End node.**
+3. **`api.CreateAction("Name")` already has a Start node and an End node** *(also in OML, which deletes the defaults; this skill reuses them)*.
    Unlike `eSpace.CreateServerAction`, which starts genuinely empty, a fresh
    `IRestServiceAction` arrives with both wired in. This inverts the pattern
    you'd copy from `servicestudio-mcp-oml`'s server-action examples:
@@ -100,7 +107,7 @@ before you write code, not after the error comes back.
    property, without "Path", is read-only/derived — don't set it.)
 
 5. **Don't guess an entity action's parameter names — they're not what you'd
-   expect.** `Get<Entity>`'s output parameter is named **`Record`**, not the
+   expect** *(output name also noted in OML)*. `Get<Entity>`'s output parameter is named **`Record`**, not the
    entity's name (a very natural wrong guess). See § 2 for the one query that
    confirms all four CRUD actions' exact parameter names before you write the
    flow that calls them — cheaper than a failed apply + `omlReset` cycle.
@@ -217,7 +224,8 @@ Per-endpoint mechanics:
 - **Config properties worth setting explicitly** on the `IRestService` (all in
   `ServiceStudio.Plugin.RESTService.Enumerations`, full values in
   [`reference/rest-service-api.md`](reference/rest-service-api.md)):
-  `Authentication` (start `None` for a dev/demo API, revisit before shipping),
+  `Authentication` (the default `None` exposes the API unauthenticated and
+  TrueChange does not flag it — see § 7 before publishing anywhere shared),
   `HttpSecurity = SSL`, `ShowDocumentation = Yes`,
   `CrossSiteRequests = Restrict`, `DefaultValueBehavior = Send`,
   `InternalAccess = No`, `Interoperability = No`.
@@ -292,3 +300,104 @@ one round-trip each — cheaper than chasing a saved-but-invalid model forward.
 
 Once a run comes back clean (no `type: "error"` entries), finish with `omlMerge`
 (`eSpaceName` + the `mutatedOmlPath` from that clean run) as usual.
+
+## 6. Verified live behaviour
+
+Everything below was observed on 2026-10-13 against Service Studio 11.55.92:
+the § 3 CRUD recipe (adapted to a `Product` entity) and the § 3.1 composite
+create (against a throwaway `TestOrder`/`TestOrderLine` pair) were applied,
+merged (`omlMerge`), published (`omlPublish`) and called with `curl`.
+
+**Model level**
+
+- Both recipes saved clean on the **first** apply — no `type: "error"`
+  entries. The only messages were unrelated `AnonymousAccess_NoPermissionsNoRoles`
+  warnings already in the module.
+- `{Id}` URL inputs default to `IsMandatory = true`. You do **not** need to set
+  it; OML's note that a placeholder input must be mandatory only bites if
+  someone sets it to false.
+- Use `entity.IdentifierType` for `{Id}` inputs (as the examples do). A Long
+  Integer input converted with `LongIntegerToIdentifier(Id)` validates and
+  behaves **identically** on the wire (below), so the conversion is optional.
+- A Get action's `Record` output is an **anonymous structure** that contains an
+  attribute named after the entity. Both `GetEntity.Record` (what the examples
+  assign) and `GetEntity.Record.<Entity>` validate and assign to an
+  entity-typed output.
+- The validator **does** check assignment expressions and types, so a typo is
+  caught at apply time, not publish time: unknown path →
+  `ExpressionUnknownObject: Can't identify 'X' element in expression`; wrong
+  type → `ExpressionInvalidExpressionType: 'Product' data type required instead
+  of 'Text'`. Read `validationMessages` after every apply.
+- Re-confirmed on the live model: `URLPath` without a leading `/` →
+  `'URL Path' property must start with '/'`; two `Body` inputs →
+  `Method '<Name>' can have only one input parameter with 'Receive In'
+  property set to 'Body'` (reported on **each** Body input, so you see it
+  twice).
+
+**Wire level** (`https://<host>/<module>/rest/<Api>/<URLPath>`)
+
+| Call | Result |
+|---|---|
+| `GET /Products` | `200`, bare JSON array of records |
+| `GET /Products/1` | `200`, record object; identical for Identifier-typed and Long Integer-typed `{Id}` |
+| `GET /Products/abc` | `400` `{"Errors":["Failed to parse. 'LongInteger' compatible data type is required for parameter 'Id'."],"StatusCode":400}` — same for both id types |
+| `GET /Products/999999` (no such row) | **`500`** `{"Errors":["Error executing query."],"StatusCode":500}` — not 404 (see § 7) |
+| `POST /TestOrders` (composite) | `200`, body is the bare id, e.g. `1` |
+| `GET <base URL>` | `301` to the generated documentation page when `ShowDocumentation = Yes` |
+
+- A single `SendIn = Body` output is sent **unwrapped**: a list output is a
+  bare JSON array, an identifier output is a bare value (`1`), a record output
+  is the record object. There is no `{"Id": 1}` envelope.
+- Request JSON field names are the structure attribute names. The composite
+  endpoint accepted
+  `{"TestOrder":{...},"TestOrderLines":[{...},{...}]}` (the names come from the
+  `CreateTestOrderRequest` structure's attributes).
+- **Composite create verified end to end**: one POST with two lines
+  (`2 × 10` and `3 × 5`) produced a header with `TotalAmount = 35`, two lines
+  with `TestOrderId` stamped to the new header and `LineTotal` computed, so the
+  ForEach, FK stamp, accumulator and Update-back-onto-header all work as
+  written.
+- Merge and publish path: `omlMerge` (`mutatedOmlPath` from the last clean
+  apply) then `omlPublish` — both returned success without further prompting.
+  Allow for publish to the shared dev environment.
+
+**MCP session notes for this build**
+
+- Service Studio 11.55.92 requires `createSessionToken` first and the token on
+  every call (`sessionToken` at top level, everything else under `input`).
+  `runQuery`'s `query` goes **inside** `input` next to `eSpaceName`.
+- `IsPublic` / `IsIdentifier` are not queryable `runQuery` fields; use the
+  § 2 query shape, or `getDataModel` and read `Public = true` / `IdentifierAttribute`.
+
+## 7. Advice before you ship
+
+1. **Set `Authentication` deliberately.** The default is `None`. The recipes
+   leave it at `None` so the first publish works, and on the live test an
+   unauthenticated `POST` created data. TrueChange does not flag it. Switch to
+   `Basic` or `Custom` (and implement the `OnAuthentication` callback) before
+   the API is published anywhere other people can reach.
+2. **Plan for the 500-on-missing-id behaviour.** `Get<Entity>` raises when the
+   row does not exist, so the recipe's Get endpoint answers `500`, not `404`.
+   If callers need to tell "not found" from "server broke", replace the
+   `GetAction` call with an aggregate filtered on `Id` and branch on
+   `GetX.List.Empty` before assigning the output.
+3. **Don't expose the entity record as the contract unless you mean to.** The
+   examples return and accept the entity as-is, so every attribute (including
+   internal ones) is part of the public API. For anything beyond a demo,
+   expose a structure with just the fields callers need and map in the flow.
+4. **Rehearse without merging.** `applyModelApiCode` only changes the
+   in-memory chain; read it back (`getIntegrations`, `getValidationMessages`)
+   and finish with `omlReset` to leave the module untouched. Only `omlMerge`
+   and `omlPublish` touch the real module and the server.
+5. **Check the node flow after the apply.** A clean `validationMessages` array
+   does not prove the flow shape. Read it back with `getIntegrations` and
+   confirm each action has exactly one Start and one End and the verb / path
+   you expected (this is how the § 1 trap was caught the first time).
+6. **Test on the wire, then clean up.** Publishing a test entity creates a real
+   table and `curl` calls create real rows. Name throwaway objects obviously
+   (`Test…`) so they can be deleted, and remember deleting the entity drops
+   the table on the next publish.
+7. **Order matters for the composite endpoint.** It looks the API up by name,
+   so create the base `IRestService` first (or `CreateIntegration` it in the
+   same lambda). The header and detail entities must be `Public` and have
+   their identifier set before their `CreateAction` / `UpdateAction` exist.

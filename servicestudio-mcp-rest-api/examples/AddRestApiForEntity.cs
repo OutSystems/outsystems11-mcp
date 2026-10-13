@@ -14,6 +14,8 @@ eSpace => {
     var shippingCompanyListType = eSpace.GetOrCreateListType(shippingCompany);
 
     var api = eSpace.CreateIntegration<ServiceStudio.Plugin.RESTService.IRestService>("ShippingCompanyAPI");
+    // None = anyone can call AND modify this API, and TrueChange does not flag it.
+    // Fine for a first dev publish; switch to Basic/Custom before it is reachable by others (SKILL.md § 7).
     api.Authentication = ServiceStudio.Plugin.RESTService.Enumerations.Authentication.None;
     api.HttpSecurity = ServiceStudio.Plugin.RESTService.Enumerations.HttpSecurity.SSL;
     api.InternalAccess = ServiceStudio.Plugin.RESTService.Enumerations.InternalAccess.No;
