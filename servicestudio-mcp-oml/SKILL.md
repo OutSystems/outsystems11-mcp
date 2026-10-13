@@ -608,7 +608,7 @@ O11 BPT use [`examples/AddProcessWithHumanActivity.cs`](examples/AddProcessWithH
 | **Traditional Web** UI *creation* (screen, block, widget tree, Preparation + Aggregate, ListRecords binding, `JavaScript` hook; CS0104 / CS0311 prophylaxis) + the Web interface catalogue | [`reference/traditional-ui-creation.md`](reference/traditional-ui-creation.md), [`docs/OutSystems.Model.UI.Web.Generated.cs`](docs/OutSystems.Model.UI.Web.Generated.cs), [`docs/OutSystems.Model.UI.Web.Widgets.Generated.cs`](docs/OutSystems.Model.UI.Web.Widgets.Generated.cs) |
 | Worked C# examples (already full `eSpace => { ... }` lambdas, no `eSpace.Save` — usable verbatim as `code`; their `using` directives map to `imports`) | [`examples/`](examples/) |
 | Namespace doc files (interface/method signatures) plus `BuiltinFunctions.Generated.json` (the OutSystems expression-function catalogue — `Abs`, `Mod`, etc., used in aggregate filters and computed attributes, **not** C# methods callable from `applyModelApiCode`) | [`docs/`](docs/) |
-| MCP host design choices & caveats — temp OML location & cleanup-on-restart, per-module tracking, per-connection approval, security scope, timeouts/port, on-demand server startup | [`../MCP-DESIGN-CHOICES.md`](../MCP-DESIGN-CHOICES.md) |
+| MCP host design choices & caveats — temp OML location & cleanup-on-restart, per-module tracking, per-connection approval, security scope, timeouts/port, on-demand server startup | [`reference/mcp-design-choices.md`](reference/mcp-design-choices.md) |
 
 ## 7. Integration walkthroughs
 
