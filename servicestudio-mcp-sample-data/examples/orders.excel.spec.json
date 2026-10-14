@@ -1,0 +1,38 @@
+{
+  "action": "BootstrapOrdersFromExcel",
+  "timer": "BootstrapOrdersFromExcel",
+  "resource": "SampleOrders.xlsx",
+  "description": "Seeds orders and lines from SampleOrders.xlsx on publish when no XL- orders exist",
+  "guard": {"entity": "Order", "filter": "Order.OrderNumber like \"XL-%\""},
+  "sheets": [
+    {"name": "Order", "entity": "Order", "structure": "Excel_Orders",
+     "columns": [
+       {"name": "OrderNumber", "type": "text", "length": 20},
+       {"name": "CustomerName", "type": "text", "length": 100},
+       {"name": "Status", "type": "text", "length": 20},
+       {"name": "TotalAmount", "type": "decimal"}
+     ],
+     "rows": [
+       ["XL-1001", "Northwind Traders", "Open", 300],
+       ["XL-1002", "Contoso Retail", "Shipped", 860],
+       ["XL-1003", "Fabrikam Inc", "Delivered", 440]
+     ],
+     "set": {"OrderDate": "CurrDateTime()"}},
+    {"name": "OrderLine", "entity": "OrderLine", "structure": "Excel_OrderLines",
+     "columns": [
+       {"name": "OrderNumber", "type": "text", "length": 20, "lookup": {"entity": "Order", "by": "OrderNumber", "into": "OrderId"}},
+       {"name": "ProductCode", "type": "text", "length": 50, "lookup": {"entity": "Product", "by": "ProductCode", "into": "ProductId"}},
+       {"name": "Quantity", "type": "integer"},
+       {"name": "UnitPrice", "type": "decimal"}
+     ],
+     "rows": [
+       ["XL-1001", "CD628248719581", 3, 60],
+       ["XL-1001", "CD792079211868", 1, 120],
+       ["XL-1002", "CD594932881568", 2, 330],
+       ["XL-1002", "CD699042016929", 4, 50],
+       ["XL-1003", "CD976283781291", 1, 140],
+       ["XL-1003", "CD628248719581", 5, 60]
+     ],
+     "set": {"LineTotal": "{row}.Quantity * {row}.UnitPrice"}}
+  ]
+}
