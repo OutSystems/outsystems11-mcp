@@ -2,13 +2,20 @@
 // Context: The module already has a public server entity "Order" (header) and "OrderLine" (detail,
 // with an OrderId foreign key to Order), and a REST API integration named "OrderAPI" already exists
 // (built via examples/AddRestApiForEntity.cs or equivalent) with plain CRUD endpoints. This example
-// adds ONE more action, CreateOrder, that accepts an order header plus a list of lines, creates the
+// adds ONE more action, CreateOrderWithLines (POST /Orders/WithLines), that accepts an order header plus a list of lines, creates the
 // header, creates each line stamped with the new header's Id, and rolls the lines' computed total
 // back onto the header via an Update call.
 //
 // Template: replace Order -> <YourHeaderEntity>, OrderLine -> <YourDetailEntity>, OrderAPI -> the
 // existing API's name, TotalAmount/LineTotal/Quantity/UnitPrice -> your rollup/computed fields.
 // Pass imports: [] when calling applyModelApiCode with this code.
+//
+// NAME / PATH: do NOT reuse "CreateOrder" + "/Orders" here. The plain CRUD API from
+// AddRestApiForEntity.cs already has CreateOrder on POST /Orders, so a second action with the same
+// name or the same verb + path collides. Use a distinct name and sub-path (verified 2026-10-14).
+// The accumulator type must match the header's rollup field: Order.TotalAmount is a Decimal, an
+// Integer accumulator silently truncates. For validation + 201 on this endpoint see
+// AddStatusCodeGuards.cs.
 //
 // Apply this AFTER the base API exists — it looks the integration up by name rather than creating
 // it, so running this against a module with no "OrderAPI" integration yet will throw a runtime
@@ -31,16 +38,16 @@ eSpace => {
     // Look the existing API up rather than creating a new one — this action is being ADDED to it.
     var api = eSpace.Integrations.OfType<ServiceStudio.Plugin.RESTService.IRestService>().Named("OrderAPI");
 
-    var createOrder = api.CreateAction("CreateOrder");
+    var createOrder = api.CreateAction("CreateOrderWithLines");
     createOrder.HTTPMethod = ServiceStudio.Plugin.RESTService.Enumerations.HTTPMethod.POST;
-    createOrder.URLPath = "/Orders";
+    createOrder.URLPath = "/Orders/WithLines";
 
     var requestInput = createOrder.CreateInputParameter("Request");
     requestInput.DataType = createOrderRequest;
     requestInput.ReceiveIn = ServiceStudio.Plugin.RESTService.Enumerations.ReceiveIn.Body;
 
     var totalAmount = createOrder.CreateLocalVariable("TotalAmount");
-    totalAmount.DataType = eSpace.IntegerType;
+    totalAmount.DataType = eSpace.DecimalType;   // match the header rollup field (Order.TotalAmount is a Decimal)
 
     var newOrderId = createOrder.CreateLocalVariable("NewOrderId");
     newOrderId.DataType = order.IdentifierType;

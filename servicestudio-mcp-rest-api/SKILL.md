@@ -50,6 +50,8 @@ marked *(also in OML)* repeat OML on purpose so this skill stands alone.
 - [§ 2 — Before you write code: confirm the entity's action signatures](#2-before-you-write-code-confirm-the-entitys-action-signatures)
 - [§ 3 — The recipe](#3-the-recipe)
 - [§ 3.1 — Composite create for a master-detail entity pair](#31-composite-create-for-a-master-detail-entity-pair)
+- [§ 3.2 — Master-detail read: one order with its lines](#32-master-detail-read-one-order-with-its-lines)
+- [§ 3.3 — Status codes beyond 404](#33-status-codes-beyond-404)
 - [§ 4 — Worked examples](#4-worked-examples)
 - [§ 5 — Recovery](#5-recovery)
 - [§ 6 — Verified live behaviour](#6-verified-live-behaviour)
@@ -241,7 +243,8 @@ For a header/detail pair (e.g. `Order` + `OrderLine`, `Invoice` + `InvoiceLine`)
 where the plain per-entity CRUD above isn't enough — the caller wants to submit
 one order *and* its lines in a single POST — build one extra REST action on the
 header entity's API instead of trying to compose two separate CRUD calls
-client-side. Proven shape (`CreateOrder`, POST `/Orders`):
+client-side. Proven shape (`CreateOrderWithLines`, POST `/Orders/WithLines` — not
+`CreateOrder` / `/Orders`, which the plain CRUD API already uses):
 
 1. **Wrap the two logical inputs in a structure** (gotcha #6 above) — one
    `Body` input of a structure type with a record-typed field for the header
@@ -271,8 +274,50 @@ client-side. Proven shape (`CreateOrder`, POST `/Orders`):
    would in Service Studio's UI.
 
 Full worked lambda: [`examples/AddCompositeCreateEndpoint.cs`](examples/AddCompositeCreateEndpoint.cs)
-(the `CreateOrder` endpoint — apply it *after* the base CRUD API from § 3 exists,
-since it adds one action onto an already-created `IRestService`).
+(the `CreateOrderWithLines` endpoint — apply it *after* the base CRUD API from § 3
+exists, since it adds one action onto an already-created `IRestService`).
+
+## 3.2 Master-detail read: one order with its lines
+
+The read counterpart of § 3.1: `GET /Orders/{Id}/WithLines` returns the header and
+its detail rows in one response. Wrap both in a **result structure** (a record
+field for the header, a list field for the lines) and use it as the single Body
+output:
+
+`Start → Aggregate FindOrder (Order.Id = Id) → If FindOrder.List.Empty
+(404 + raise, see § 7.2) → Aggregate GetLines (OrderLine.OrderId = Id) →
+Assign(Result.Order := FindOrder.List.Current; Result.OrderLines := GetLines.List) → End`.
+
+Verified live 2026-10-14: the response body is the structure itself
+(`{"Order":{…},"OrderLines":[…]}`), an order with no lines returns an empty
+array, and a missing order is a 404. Full lambda:
+[`examples/AddMasterDetailGetEndpoint.cs`](examples/AddMasterDetailGetEndpoint.cs).
+
+## 3.3 Status codes beyond 404
+
+The mechanism is always the same: `HTTPRequestHandler.SetStatusCode(<code>)`,
+then either raise a user exception (the platform sends its standard error JSON
+and keeps your status) or fall through to a normal End (the status is kept, the
+body is whatever the output holds). Verified live 2026-10-14:
+
+| Status | Where | How |
+|---|---|---|
+| **201** | every POST create | `SetStatusCode(201)` after the Create call and before End; body stays the bare id |
+| **204** | successful PUT / DELETE | `SetStatusCode(204)` before End; no output parameter, body empty |
+| **409** | DELETE of a row that is referenced under a **Protect** delete rule | aggregate over the referencing entity (`OrderLine.ProductId = Id`), `If not FindUsage.List.Empty` → `SetStatusCode(409)` + raise `ProductInUse`. Without it the DB rule surfaces as a 500 |
+| **400** | composite create with bad input | `If Request.OrderLines.Empty` and a per-line product lookup inside the ForEach → `SetStatusCode(400)` + raise `InvalidOrder` |
+
+- **The raise rolls the transaction back.** A composite call that failed
+  validation on line N left no order header behind (order list identical before
+  and after), so you can validate inside the loop instead of in a pre-pass.
+- `not <aggregate>.List.Empty` is a valid `SetCondition` expression.
+- Add these by **deleting and recreating** the affected action (gotcha #7), not
+  by splicing nodes in.
+
+Lambdas: [`examples/AddStatusCodeGuards.cs`](examples/AddStatusCodeGuards.cs)
+(201 / 409 / 400) and
+[`examples/AddNoContentOnUpdateDelete.cs`](examples/AddNoContentOnUpdateDelete.cs)
+(204).
 
 ## 4. Worked examples
 
@@ -292,6 +337,13 @@ since it adds one action onto an already-created `IRestService`).
   `eSpace.Integrations.OfType<IRestService>().Named(...)` rather than created
   fresh). First attempt hit gotcha #6 (two `Body` inputs); second attempt, with
   the request wrapped in a structure, saved clean.
+
+- [`examples/AddMasterDetailGetEndpoint.cs`](examples/AddMasterDetailGetEndpoint.cs) —
+  § 3.2: `GET /Orders/{Id}/WithLines` with a result structure and a 404 guard.
+- [`examples/AddStatusCodeGuards.cs`](examples/AddStatusCodeGuards.cs) — § 3.3:
+  201 on POST, 409 on an in-use delete, 400 validation in the composite create.
+- [`examples/AddNoContentOnUpdateDelete.cs`](examples/AddNoContentOnUpdateDelete.cs) —
+  § 3.3: 204 on PUT and DELETE, keeping the 404 and 409 guards.
 
 ## 5. Recovery
 
@@ -382,6 +434,14 @@ merged (`omlMerge`), published (`omlPublish`) and called with `curl`.
    unauthenticated `POST` created data. TrueChange does not flag it. Switch to
    `Basic` or `Custom` (and implement the `OnAuthentication` callback) before
    the API is published anywhere other people can reach.
+   Options (from platform knowledge, **not** exercised live in this module):
+   `Basic` — the platform checks the `Authorization: Basic` header against
+   platform users and answers 401 itself, no callback to write; `Custom` — you
+   implement `OnAuthentication` (API key header, bearer/JWT validation, lookup
+   in your own table) and can check roles per endpoint afterwards. There is no
+   built-in OAuth2 server for exposed O11 REST APIs; validate the bearer token
+   in the Custom callback. Turning auth on also means every smoke-test `curl`
+   needs credentials.
 2. **A real HTTP 404 needs the HTTPRequestHandler component.** `Get<Entity>`
    raises when the row does not exist, so the plain recipe answers `500` with
    `Error executing query.`. The Model API itself cannot fix that: `(System)`
@@ -390,7 +450,8 @@ merged (`omlMerge`), published (`omlPublish`) and called with `curl`.
    `Security`, `NotRegistered`, `Communication`) include nothing for "not
    found". What works (verified 2026-10-13): add the Forge component
    **HTTPRequestHandler** as a reference of the module (a Service Studio step
-   — Manage Dependencies), then in each id-based method look the row up with
+   — Manage Dependencies; check first with `runQuery`
+   `Root { References { Name } }`, it is often already there), then in each id-based method look the row up with
    an aggregate (`FindX`, filter `X.Id = Id`), branch on `FindX.List.Empty`,
    and on the true branch call `HTTPRequestHandler.SetStatusCode` with
    `StatusCode = 404` and end on its **own** End node. Apply the same guard
@@ -425,3 +486,12 @@ merged (`omlMerge`), published (`omlPublish`) and called with `curl`.
    so create the base `IRestService` first (or `CreateIntegration` it in the
    same lambda). The header and detail entities must be `Public` and have
    their identifier set before their `CreateAction` / `UpdateAction` exist.
+8. **Smoke-test recipe.** The Service Studio MCP does not expose the
+   environment's host name. On macOS it is in
+   `~/Library/Application Support/OutSystems/ServiceStudio 11 XPlatform/Settings.xml`
+   (`<HostName>`). The URL shape is `https://<host>/<module>/rest/<Api>/<URLPath>`.
+   Order: read-only GETs first, then write cases that clean up after themselves
+   (create → read back → delete), and failure-path writes (empty lines, unknown
+   product, in-use delete) that should persist nothing — compare the list
+   before and after. Create the throwaway row through the API and delete it
+   through the API in the same script.
