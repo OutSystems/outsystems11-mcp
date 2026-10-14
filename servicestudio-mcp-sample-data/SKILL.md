@@ -118,6 +118,15 @@ expression`; `{row}` is the current sheet row). A column with `lookup` is not
 copied: it finds the referenced row by business key and stores its `Id`
 in `into`. Types: `text`, `integer`, `longinteger`, `decimal`, `boolean`.
 
+The generator validates the spec before emitting anything and stops with a
+message instead of generating: names (action, timer, entity, structure, column,
+attribute) must be plain identifiers, `resource` a plain `*.xlsx` file name,
+sheet names at most 31 characters without `[ ] : * ? / \`, `text` columns need
+an integer `length`, every row must match the column count, and an `"xlsx"` to
+embed must be a `.xlsx` file inside the spec's own directory (at most 20 MB).
+Cell text and sheet names are XML-escaped when the workbook is written.
+`generate_inline_seed.py` applies the same identifier checks.
+
 To change the data later: edit the generated `.xlsx` in Excel, set `"xlsx":
 "edited.xlsx"` in the spec (rows are then ignored), and run
 

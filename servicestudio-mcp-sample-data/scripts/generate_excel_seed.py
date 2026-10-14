@@ -50,7 +50,6 @@ import os
 import re
 import sys
 import zipfile
-from xml.sax.saxutils import escape
 
 N = "OutSystems.Model.Logic.Nodes."
 TYPES = {"text": "TextType", "integer": "IntegerType", "longinteger": "LongIntegerType",
@@ -63,6 +62,86 @@ def q(s):
 
 def ident(s):
     return re.sub(r"\W", "", s)
+
+
+_XML_ILLEGAL = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff]")
+NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+SHEET_BAD = re.compile(r"[\[\]:*?/\\]")
+MAX_XLSX_BYTES = 20 * 1024 * 1024
+
+
+def escape(s):
+    """XML-escape text and attribute values (quotes included); drop characters
+    that are not legal in XML 1.0 so a bad cell can never corrupt the package."""
+    s = _XML_ILLEGAL.sub("", str(s))
+    return (s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+             .replace('"', "&quot;"))
+
+
+def fail(msg):
+    sys.exit("error: " + msg)
+
+
+def validate(spec):
+    """Reject anything that would be interpolated into the generated lambda or
+    workbook in a way the generator does not escape."""
+    for key in ("action", "timer", "resource", "guard", "sheets"):
+        if key not in spec:
+            fail(f'spec is missing "{key}"')
+
+    def name(v, what):
+        if not isinstance(v, str) or not NAME_RE.match(v):
+            fail(f"{what} must be an identifier (letters, digits, underscore): {v!r}")
+
+    name(spec["action"], "action")
+    name(spec["timer"], "timer")
+    if not re.match(r"^[A-Za-z0-9_. -]{1,80}\.xlsx$", str(spec["resource"])):
+        fail('resource must be a plain file name ending in ".xlsx"')
+    name(spec["guard"].get("entity"), "guard.entity")
+    if not spec["sheets"]:
+        fail("sheets must not be empty")
+    for s in spec["sheets"]:
+        n = s.get("name", "")
+        if not isinstance(n, str) or not 1 <= len(n) <= 31 or SHEET_BAD.search(n):
+            fail(f"sheet name must be 1-31 characters without [ ] : * ? / \\ : {n!r}")
+        name(s.get("entity"), "sheet.entity")
+        name(s.get("structure"), "sheet.structure")
+        if not s.get("columns"):
+            fail(f"sheet {n!r} has no columns")
+        for c in s["columns"]:
+            name(c.get("name"), "column.name")
+            if c.get("type") not in TYPES:
+                fail(f"column {c.get('name')!r}: type must be one of {sorted(TYPES)}")
+            if c["type"] == "text":
+                ln = c.get("length")
+                if not isinstance(ln, int) or isinstance(ln, bool) or not 1 <= ln <= 2000:
+                    fail(f"column {c['name']!r}: text needs an integer length 1-2000")
+            if "attribute" in c:
+                name(c["attribute"], "column.attribute")
+            lk = c.get("lookup")
+            if lk:
+                for k in ("entity", "by", "into"):
+                    name(lk.get(k), "lookup." + k)
+        for row in s.get("rows", []):
+            if len(row) != len(s["columns"]):
+                fail(f"sheet {n!r}: a row has {len(row)} values for {len(s['columns'])} columns")
+        for attr in s.get("set", {}):
+            name(attr, "set attribute")
+
+
+def read_xlsx(path, base_dir):
+    """Read a workbook to embed. It must be a .xlsx file inside the spec's own
+    directory (no ../ escapes, no symlink out) and at most MAX_XLSX_BYTES."""
+    full = os.path.realpath(os.path.join(base_dir, path))
+    root = os.path.realpath(base_dir)
+    if os.path.commonpath([full, root]) != root:
+        fail(f"xlsx must live inside the spec directory: {path}")
+    if not full.lower().endswith(".xlsx") or not os.path.isfile(full):
+        fail(f"xlsx must be an existing .xlsx file: {path}")
+    if os.path.getsize(full) > MAX_XLSX_BYTES:
+        fail(f"xlsx is larger than {MAX_XLSX_BYTES // (1024 * 1024)} MB: {path}")
+    with open(full, "rb") as fh:
+        return fh.read()
 
 
 # ---------------------------------------------------------------- xlsx writer
@@ -291,9 +370,9 @@ def gen(spec, xlsx_bytes, replace_only=False):
     return "\n".join(o) + "\n"
 
 
-def build_xlsx(spec):
+def build_xlsx(spec, base_dir):
     if spec.get("xlsx"):
-        return open(spec["xlsx"], "rb").read()
+        return read_xlsx(spec["xlsx"], base_dir)
     sheets = [(s["name"], [c["name"] for c in s["columns"]], s["rows"]) for s in spec["sheets"]]
     return make_xlsx(sheets)
 
@@ -306,12 +385,17 @@ if __name__ == "__main__":
     out_xlsx = None
     replace_only = "--replace-resource-only" in args
     if "--xlsx" in args:
-        out_xlsx = args[args.index("--xlsx") + 1]
-    spec = json.load(open(spec_path))
-    spec_dir = os.path.dirname(os.path.abspath(spec_path))
-    if spec.get("xlsx") and not os.path.isabs(spec["xlsx"]):
-        spec["xlsx"] = os.path.join(spec_dir, spec["xlsx"])
-    data = build_xlsx(spec)
+        k = args.index("--xlsx") + 1
+        if k >= len(args):
+            fail("--xlsx needs a file name")
+        out_xlsx = args[k]
+        if not out_xlsx.lower().endswith(".xlsx"):
+            fail("--xlsx output must end in .xlsx")
+    with open(spec_path, encoding="utf-8") as fh:
+        spec = json.load(fh)
+    validate(spec)
+    data = build_xlsx(spec, os.path.dirname(os.path.abspath(spec_path)))
     if out_xlsx:
-        open(out_xlsx, "wb").write(data)
+        with open(out_xlsx, "wb") as fh:
+            fh.write(data)
     sys.stdout.write(gen(spec, data, replace_only))

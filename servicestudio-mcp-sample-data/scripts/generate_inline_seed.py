@@ -45,6 +45,44 @@ def ident(s):
     return re.sub(r"\W", "", s)
 
 
+NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def fail(msg):
+    sys.exit("error: " + msg)
+
+
+def validate(spec):
+    """Names are emitted as identifiers; expressions in "set" are emitted as
+    quoted string literals and are the author's own OutSystems expressions."""
+    def name(v, what):
+        if not isinstance(v, str) or not NAME_RE.match(v):
+            fail(f"{what} must be an identifier (letters, digits, underscore): {v!r}")
+
+    for key in ("action", "timer", "guard", "records"):
+        if key not in spec:
+            fail(f'spec is missing "{key}"')
+    name(spec["action"], "action")
+    name(spec["timer"], "timer")
+    name(spec["guard"].get("entity"), "guard.entity")
+    for lk in spec.get("lookups", []):
+        name(lk.get("aggregate"), "lookup.aggregate")
+        name(lk.get("entity"), "lookup.entity")
+        if not isinstance(lk.get("minRows", 1), int) or isinstance(lk.get("minRows", 1), bool):
+            fail("lookup.minRows must be an integer")
+    if not spec["records"]:
+        fail("records must not be empty")
+    for r in spec["records"]:
+        name(r.get("entity"), "record.entity")
+        for attr in r.get("set", {}):
+            name(attr, "record attribute")
+        for c in r.get("children", []):
+            name(c.get("entity"), "child.entity")
+            name(c.get("fk"), "child.fk")
+            for attr in c.get("set", {}):
+                name(attr, "child attribute")
+
+
 def gen(spec):
     out = []
     a = out.append
@@ -71,7 +109,6 @@ def gen(spec):
     a(f'    var act = eSpace.CreateServerAction({q(spec["action"])});')
     if spec.get("description"):
         a(f'    act.Description = {q(spec["description"])};')
-    used = [e for e in entities if e != spec["guard"]["entity"] or e in parents or True]
     rec_entities = []
     for r in spec["records"]:
         for e in [r["entity"]] + [c["entity"] for c in r.get("children", [])]:
@@ -154,4 +191,7 @@ def gen(spec):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         sys.exit(__doc__)
-    sys.stdout.write(gen(json.load(open(sys.argv[1]))))
+    with open(sys.argv[1], encoding="utf-8") as fh:
+        spec = json.load(fh)
+    validate(spec)
+    sys.stdout.write(gen(spec))
