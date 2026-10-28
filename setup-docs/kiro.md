@@ -19,7 +19,7 @@ You can use either or both. `AGENTS.md` is always included and supports no inclu
    irm 'https://cli.kiro.dev/install.ps1' | iex          # Windows (PowerShell)
 ```
    Running `kiro-cli` the first time opens a browser sign-in (Google, GitHub, AWS Builder ID, or your organization identity). No Pro subscription is required for the CLI. Check state any time with `kiro-cli whoami`.
-2. **Service Studio (OutSystems 11)** running, with the target module **open**, and its in-process MCP server **started** — it does not start automatically: in Service Studio, go to **Edit > MCP Configuration...** and click **Start MCP Server** (default port `41820`). Approve the connection the first time.
+2. **Service Studio (OutSystems 11)** running, with the target module **open**, and its in-process MCP server **started** — it does not start automatically: in Service Studio, go to **Edit > MCP Server** and click **Start MCP Server** (default port `41820`). Approve the connection the first time.
 
 ## Step 1 — install the skill
 

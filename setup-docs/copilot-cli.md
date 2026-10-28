@@ -23,7 +23,7 @@ Setup for the **agentic GitHub Copilot CLI** (the standalone `copilot` command).
    (Or via your platform's documented installer.) Verify with `copilot --version`.
 2. Signed in with a GitHub plan that includes Copilot agent access 
    (`/login` inside the CLI, or `copilot` will prompt on first run).
-3. **Service Studio (OutSystems 11)** running, with the target module **open**, and its in-process MCP server **started** — it does not start automatically: in Service Studio, go to **Edit > MCP Configuration...** and click **Start MCP Server** (default port `41820`). Approve the connection the first time.
+3. **Service Studio (OutSystems 11)** running, with the target module **open**, and its in-process MCP server **started** — it does not start automatically: in Service Studio, go to **Edit > MCP Server** and click **Start MCP Server** (default port `41820`). Approve the connection the first time.
 
 ## Step 1 — add the MCP server
 

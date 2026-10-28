@@ -14,7 +14,7 @@ You can use either or both.
 ## Prerequisites
 
 1. **Google Antigravity** installed (IDE and/or CLI), signed in.
-2. **Service Studio (OutSystems 11)** running, with the target module **open**, and its in-process MCP server **started** — it does not start automatically: in Service Studio, go to **Edit > MCP Configuration...** and click **Start MCP Server** (default port `41820`). Approve the connection the first time.
+2. **Service Studio (OutSystems 11)** running, with the target module **open**, and its in-process MCP server **started** — it does not start automatically: in Service Studio, go to **Edit > MCP Server** and click **Start MCP Server** (default port `41820`). Approve the connection the first time.
 
 ## Step 1 — install the skill
 

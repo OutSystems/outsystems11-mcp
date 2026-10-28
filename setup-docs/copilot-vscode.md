@@ -28,7 +28,7 @@ Open this repository as your VS Code workspace and everything below is discovere
 
 1. **VS Code** 1.102 or newer (MCP support is generally available from 1.102).
 2. **GitHub Copilot** + **GitHub Copilot Chat** extensions, signed in with a    plan that includes **agent mode** and **MCP tools**.
-3. **Service Studio (OutSystems 11)** running, with the target module **open**, and its in-process MCP server **started** — it does not start automatically: in Service Studio, go to **Edit > MCP Configuration...** and click **Start MCP Server** (default port `41820`).
+3. **Service Studio (OutSystems 11)** running, with the target module **open**, and its in-process MCP server **started** — it does not start automatically: in Service Studio, go to **Edit > MCP Server** and click **Start MCP Server** (default port `41820`).
    (This is the same server Claude Code uses. Every new client connection must be **approved in Service Studio** the first time.)
 
 ## Install

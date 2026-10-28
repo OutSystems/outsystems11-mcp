@@ -92,7 +92,7 @@ The MCP server your agent connects to is **embedded in Service Studio** — the 
 The MCP server is embedded in Service Studio, but it does **not** start automatically — you start it per session, from the module you want to work on:
 
 1. Open the module in Service Studio.
-2. Go to **Edit > MCP Configuration...**.
+2. Go to **Edit > MCP Server**.
 3. Confirm the **MCP server port** (default `41820`) and click **Start MCP Server**.
 
 The dialog then shows the **MCP server URL** and the exact **Claude Code command** to register it, each with its own **Copy** button — you can copy the command straight from here instead of retyping it in step 3 below.

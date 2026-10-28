@@ -21,7 +21,7 @@ You can use either or both. If your project also targets Codex, prefer
 1. **Cursor** installed and signed in.
 2. **Service Studio (OutSystems 11)** running, with the target module
    **open**, and its in-process MCP server **started** — it does not start
-   automatically: in Service Studio, go to **Edit > MCP Configuration...**
+   automatically: in Service Studio, go to **Edit > MCP Server**
    and click **Start MCP Server** (default port `41820`). Approve the
    connection the first time.
 
