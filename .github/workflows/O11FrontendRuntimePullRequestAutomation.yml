@@ -1,0 +1,56 @@
+name: O11 Frontend Runtime - Pull Request Automation
+
+on:
+  pull_request_target:
+    types:
+      - ready_for_review
+      - opened
+
+# Reviewer assignment is no longer done by a custom workflow here - it relies on
+# GitHub's native "Team review assignment" (round-robin/load-balanced) settings on
+# the owning team, plus branch protection rules (required reviewers/CODEOWNERS) on
+# each consumer repo.
+#
+# github.event.pull_request.requested_reviewers is NOT trustworthy for this: GitHub's
+# team/CODEOWNERS auto-assignment can resolve AFTER the "opened" webhook payload is
+# captured (a team can still show as the reviewer, or the list can be briefly empty),
+# with the real assignment only visible on a later, separate review_requested event.
+# So resolveReviewers re-fetches the PR live instead of trusting the webhook snapshot -
+# by the time this job actually runs (runner provisioning alone takes several seconds),
+# GitHub's assignment has virtually always already completed.
+
+permissions:
+  pull-requests: read
+
+jobs:
+  resolveReviewers:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    outputs:
+      reviewers: ${{ steps.fetch.outputs.reviewers }}
+    steps:
+    - name: Fetch live requested reviewers
+      id: fetch
+      uses: actions/github-script@v9
+      with:
+        script: |
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.payload.pull_request.number,
+          });
+          core.setOutput('reviewers', pr.requested_reviewers.map(r => r.login).join(' , '));
+
+  slackNotification:
+    needs: resolveReviewers
+    if: ${{ always() }}
+    uses: OutSystems/O11FrontendRuntimeUtils/.github/workflows/O11FrontendRuntimeSlackNotificationTemplate.yml@main
+    with:
+      pr_url: ${{ github.event.pull_request.html_url }}
+      pr_number: ${{ github.event.pull_request.number }}
+      pr_title: ${{ github.event.pull_request.title }}
+      pr_user: ${{ github.event.pull_request.user.login }}
+      pr_reviewers: ${{ needs.resolveReviewers.result == 'success' && needs.resolveReviewers.outputs.reviewers || join(github.event.pull_request.requested_reviewers.*.login, ' , ') }}
+      pr_draft: ${{ github.event.pull_request.draft }}
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
