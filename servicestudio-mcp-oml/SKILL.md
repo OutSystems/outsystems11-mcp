@@ -572,6 +572,9 @@ Their schemas don't declare `sessionToken`; send it anyway (§ 0):
   and waits for the result. It needs a write permission the user grants in the MCP Server
   dialog; while that is withheld it returns status `blocked`. **Only call it when the user
   explicitly asks to publish** — never as an automatic closing step.
+  Note (2026-10-14): the tool's advertised input schema lists only `input`, but the server still
+  rejects the call without a top-level `sessionToken` (`-32002 … requires a valid session token`);
+  pass it anyway.
   Verified 2026-10-03: it publishes the **live** module (merge first; an unmerged chain is not
   published), it requires the session token, and it fails at once with "Module 'X' is not open
   in Service Studio. Open it before calling omlPublish." if the module isn't open. A clean
