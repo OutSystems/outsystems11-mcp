@@ -37,6 +37,9 @@ differs from ODC's published examples in one important way (see § 1).
 > customer feedback. They can change significantly, including through breaking changes, or be
 > discontinued. **The first time you use a write tool in a conversation, tell the user it's a
 > Beta Feature and share https://www.outsystems.com/legal/beta-features-agreement.** The read tools are Generally Available and need no notice.
+> A throw-probe (`applyModelApiCode` that ends in `throw new Exception("PROBE:…")`, § 1.1) saves
+> nothing, so it counts as a read: no notice is needed, and it's allowed when the user asks you not
+> to change anything.
 
 ## Contents
 
@@ -82,11 +85,14 @@ differs from ODC's published examples in one important way (see § 1).
 
 1. **Call `createSessionToken` once, first**, passing `clientName` (your agent's
    name — shown to the user in Service Studio's approval dialog). The result is a
-   token string. Keep it for the whole agent session and **reuse it after a
+   token string. The call waits until the user answers that dialog, and you get no
+   signal that it is showing: **before calling it, tell the user to approve the
+   request in Service Studio**, and if it hasn't returned after a few seconds, remind
+   them that the dialog may be behind other windows. Keep it for the whole agent session and **reuse it after a
    reconnect** — never request a second one for the same session.
 2. **Pass `sessionToken` as a top-level argument on every other call** —
    including `omlPublish`, `omlRefreshReferences` and `getRoleExceptions`:
-   their schemas don't declare it, but send it anyway: `getRoleExceptions` rejects a call without it ("This tool requires a valid session token", verified 2026-10-01).
+   their schemas don't declare it, but send it anyway: each rejects a call without it ("This tool requires a valid session token"; `getRoleExceptions` verified 2026-10-01, `omlPublish` 2026-10-17). If your client refuses to send a parameter missing from the schema, ask the user to publish or refresh from Service Studio.
 3. **Every tool except `listApps` takes its arguments wrapped in `input`:**
 
 ```jsonc
@@ -205,11 +211,30 @@ Before mutating an OML, **always** call `getDataModel` first. Its output is the
 existing data model rendered as the same Model API dialect you have to emit —
 pattern-match against it.
 
+**To get oriented, or to answer a read-only question about the whole module, run the
+inventory probe first:** [`examples/ProbeModuleInventory.cs`](examples/ProbeModuleInventory.cs).
+One throw-probe returns entities with attribute types, structures, screens per flow with
+their roles, server actions with folders, client actions, roles, integrations and
+references, plus the module's TrueChange messages. Verified 2026-10-17: a 17-entity,
+15-screen module came back as ~5.6k characters, where `getDataModel` alone was ~113k and
+too large to return inline. Then drill in with the `get*` tools only where the question
+or the edit needs detail. A module summary built from one getter per element took over
+11 minutes and 28 calls in testing.
+
+> **A throw-probe is a read, even though it goes through `applyModelApiCode`.** It
+> saves nothing, the session pointer doesn't move, and the module is untouched (§ 1.1).
+> Use it when the user says "don't change anything", and don't count it as a Beta write.
+> In testing, an agent told "don't change anything" avoided `applyModelApiCode`
+> altogether and fell back to one `getScreen` per screen: 36 calls for a summary the
+> inventory probe returns in one. For a structured summary (names, types, counts,
+> roles), the probe plus at most two or three follow-up reads is the budget. Call
+> `getScreen` and similar only when the user asks for screen-level detail.
+
 | Tool | When to use |
 |---|---|
 | `getDataModel` | Entities, attributes, foreign keys, identifier attributes (this module + entities reachable through references) |
 | `getStructures` | All structures and their attributes |
-| `getActionNames` + `getServerAction` / `getClientAction` / `getServiceAction` | `getActionNames` takes `objectType: "server" \| "client" \| "service"` to list top-level action names, then fetch one by name |
+| `getActionNames` + `getServerAction` / `getClientAction` / `getServiceAction` | `getActionNames` takes `objectType: "server" \| "client" \| "service"` and lists the module's actions, including those inside folders, plus referenced ones (`IsReferenced: true`). Then fetch one by name |
 | `getScreenNames` + `getScreen` | Screen layout, widgets, screen actions |
 | `getWebBlockNames` + `getWebBlock` | Web blocks |
 | `getRoleNames` + `getRole` | Roles |
@@ -242,6 +267,16 @@ Full catalogue with input shapes: [`reference/verb-reference.md`](reference/verb
 > lines, but `AddDependency` throws inside `applyModelApiCode` even for an
 > already-resident element (§ 8). Copy the *shape* of the calls, and resolve
 > referenced elements through `eSpace.References.Named("…")`.
+>
+> **Read-back is creation code, so never replay it to edit.** `getServerAction`
+> returns an existing action as `eSpace.CreateServerAction("X")` plus a `Folder =`
+> line. Running that adds a second action. To change an existing element, look it up
+> and mutate it in place: `eSpace.ServerActions.Named("X")`, which also finds actions
+> inside folders. Verified 2026-10-17: `CreateServerAction("DoLogout")` on a module
+> that already had `DoLogout` in a folder silently produced `DoLogout2` with
+> `Folder == null`, and TrueChange did not flag the duplicate. See
+> [`reference/patterns-by-element.md`](reference/patterns-by-element.md) § "Editing an
+> existing element".
 
 ## 3. The `applyModelApiCode` invocation shape
 
@@ -336,8 +371,9 @@ Each `validationMessages` entry is an object, not a line of text:
 | **Runner process-crash** (an unsupported API member kills the sidecar mid-run) | result | **empty** | `[]` | `""` | unchanged |
 
 > **⚠️ The process-crash row wastes the most time.** An unsupported API member
-> kills the sidecar mid-run, giving **empty everything** — including
-> `stdoutOutput`, so breadcrumb prints can't localise it. Unlike a runtime
+> kills the sidecar mid-run, giving **empty everything**, so a throw-probe at
+> the end never reports. Some clients surface it instead as a process-exit
+> error ("exited with code 2", no stdout); treat that the same way. Unlike a runtime
 > failure (which populates `exceptionMessage`) or a compile failure (which
 > never reaches the result channel at all), a crash is silent on
 > every channel; it is **not** "no module open." Recovery: bisect, don't
@@ -369,6 +405,14 @@ diagnostics means a wrong method/property name; a `type: "Error"` entry in
 `validationMessages` means the validator caught something. Traditional-Web widget errors (`CS0104`, `CS0311`) have
 targeted fixes in [`reference/traditional-ui-creation.md`](reference/traditional-ui-creation.md);
 pointer mechanics in [`reference/mcp-session-pointer.md`](reference/mcp-session-pointer.md).
+
+**Don't silently substitute when creation fails.** If the widget or element the user
+asked for won't create, for example a Traditional `ITableRecordsWidget`, fix the error
+against the docs and the verified recipes. Swapping in something else (a ListRecords
+instead of a table) without saying so is not an acceptable fallback. If you can't fix
+it, stop and report the failure along with the alternative you propose. The
+Traditional table recipe is in
+[`reference/traditional-ui-creation.md`](reference/traditional-ui-creation.md) § "Recipe 5b".
 
 ## 3.1 Finalising — auto-merge after the last mutation
 
@@ -423,6 +467,11 @@ doesn't succeed (the OML stays on disk at the `mutatedOmlPath` you passed),
 but **keep that path** in case the user wants to bring the work back. See
 [`reference/mcp-session-pointer.md`](reference/mcp-session-pointer.md).
 
+> **After an automatic merge, an open flow canvas does not redraw** (verified
+> 2026-10-17). The model is updated — the properties panel and expression editor show
+> the new values — but the canvas keeps drawing old labels until the user navigates
+> away and back. Mention this when the user has the changed flow open.
+
 > **`merged: false` with "The merge failed. See the log for details."** The real
 > reason appears only in a Service Studio dialog. No log file is written that you
 > can read. Do not retry with the same file.
@@ -465,11 +514,23 @@ but **keep that path** in case the user wants to bring the work back. See
 
 ### Flow layout is a completion gate — do it before you merge
 
-**Every action (server or client) that gained new or spliced nodes must get a
-full visual layout pass** — a BFS walk from the start node assigning
-coordinates level by level, `Connected*` helpers preferred over manually
-setting `Target`, and a splice-link read-back — before the task is
-considered complete. A flow that is logically correct but visually tangled
+**Every action (server or client) that gained new or spliced nodes must be laid out**
+before the task counts as complete. How depends on who drew the flow:
+
+- **A flow you created in this task** gets the **full layout pass**:
+  - a branch-aware walk from the Start node that places each If, Switch and For Each
+    branch in its own column and puts merge points below their deepest branch;
+  - `Connected*` helpers preferred over setting `Target` by hand;
+  - a splice-link read-back;
+  - a final check that no two nodes share a grid cell and no forward edge points upward.
+- **An existing flow you edited keeps the developer's layout. Don't re-run the full
+  pass on it**, because that would rearrange their branches. Insert locally: shift every
+  node at or below the insertion row down by one row of the flow's own spacing, put the
+  new node in the freed slot, wire it, and check that no two nodes share a cell
+  (verified 2026-10-17). Recipe: [`reference/model-api-tips.md`](reference/model-api-tips.md)
+  § "Inserting into an existing flow".
+
+A flow that is logically correct but visually tangled
 is not done; treat this as a hard precondition of the auto-merge above, not
 an optional polish step. The host's own "Action Flow auto arrange" (logged on
 stderr) does **not** position hand-wired nodes. Full mechanics: [`reference/model-api-tips.md`](reference/model-api-tips.md)
@@ -688,6 +749,18 @@ host-only `createSessionToken`, `listApps`, `omlReset`, `omlMerge`,
     a screenshot alone can't tell you whether it deployed. If it is stale, hand the CSS to
     the user as a file to paste into the stylesheet editor in Service Studio and publish
     from there.
+- **Don't rely on `IRestService.CrossSiteRequests = Restrict` for CORS.** It has no
+  runtime effect (verified 2026-10-17): the property can be set, TrueChange is silent,
+  it survives merge and publish, yet the published API still answers a foreign `Origin`
+  with `Access-Control-Allow-Origin: *`, on the request and on the preflight. Its API doc
+  comment is "TBD", and Service Studio's UI doesn't expose it. Don't set it to restrict
+  cross-origin access. If the user needs CORS restricted, tell them it has to be enforced
+  another way, and that the setting is under review.
+- **Tools can't tell environments apart** (verified 2026-10-17). With modules from two
+  infrastructures open, `listApps` returns them in one list with no server or environment
+  field, and every tool addresses a module by name only. `omlPublish` publishes each module
+  to the server it was opened from. If two open modules could share a name, or the user
+  works across environments, confirm with the user which module and environment they mean.
 - **Widget sequences can be reordered.** `IContainer.Widgets`, `ILink.Widgets` and
   `IPlaceholderContentWidget.Widgets` are `OutSystems.Model.ISequence<IMobileWidget>`,
   with `MoveToStart`, `MoveToEnd`, `MoveBeforeSibling`, `MoveAfterSibling` and
@@ -764,6 +837,29 @@ Quick checklist (each already covered in detail above):
   row prefix") that collide with literals inside OutSystems expressions. The
   observed result was `FormatCurrency(x, "GetList.List.Current.", …)`. Use a token
   that can never appear in an expression, such as `@@ROW@@`.
+- Replaying `get*` read-back to edit an element. Read-back is creation code, so it
+  adds a silently renamed duplicate (`X2`, outside its folder). Look the element up
+  with `eSpace.ServerActions.Named("X")` (or the matching collection) and mutate it
+  in place (§ 2).
+- **CS1503 `cannot convert from 'IForm' to 'IContainer'`.** Reactive widget parents
+  share no common interface. `IForm`, `IContainer`, `IPlaceholderContentWidget`,
+  `IList` and the rest each declare their own `CreateWidget<T>`, and an `IForm` is
+  not an `IContainer`. To reuse an `IContainer` helper for form fields, create a
+  container inside the form first (`form.CreateWidget<ServiceStudio.Plugin.NRWidgets.IContainer>()`)
+  and pass that.
+- **CS1593 / CS7036 on your own `Action<A, B>` helper.** The lambda's parameter count,
+  and every call to it, must match the type arguments exactly, because `Action<…>` has
+  no optional parameters. For helpers, prefer a typed local function
+  (`void AddField(ServiceStudio.Plugin.NRWidgets.IContainer c, string label) { … }`).
+  Local functions pass the sandbox (verified 2026-10-17), give clearer errors, and
+  support optional parameters.
+- Setting `Description` on an `IUserException`. It has only `Name` plus the audit
+  fields (`CreatedBy`, `LastModifiedBy`, `LastModifiedDate`, `LastMergedBy`,
+  `LastMergedDate`), so this fails with CS1061 (verified 2026-10-17). Service Studio's
+  properties panel shows only a Name for user exceptions too, so a description can't be
+  stored anywhere. Tell the user that, and don't suggest typing it in Service Studio. If they
+  want the text documented, offer a comment on the flows that raise the exception. Not every
+  element has a `Description`; check [`docs/`](docs/) before setting one.
 - Building UI or logic for many screens in one lambda without a dry run. Run the
   lambda once with `throw new Exception("PROBE:" + summary)` as its last
   statement. This returns the TrueChange messages for the change without saving

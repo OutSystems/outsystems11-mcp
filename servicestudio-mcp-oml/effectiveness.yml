@@ -41,6 +41,13 @@
 #     full type qualification), and a harness-level failure that is not a
 #     code bug at all (scenario_13 — every tool call failing identically
 #     because the client corrupts the argument envelope).
+#   - scenarios 20-24 come from MVP feedback, verified live 2026-10-17:
+#     editing an existing (foldered) action in place instead of replaying
+#     creation-code read-back (scenario_20), positional SQL column mapping
+#     (scenario_21), Traditional TableRecords built inside the layout's
+#     MainContent (scenario_22), local insertion that keeps an existing
+#     flow's layout (scenario_23), and a whole-module summary from one
+#     inventory probe (scenario_24).
 
 test_type: "effectiveness"
 name: "servicestudio-mcp-oml effectiveness"
@@ -845,3 +852,147 @@ scenario_19:
 
       - point: "Verifies after applying"
         description: "The response checks `validationMessages` / `getValidationMessages` and reads the process back (e.g. `getSerializedObjectByNameAndType` with `OutSystems.Model.Processes.IProcess`)."
+
+scenario_20:
+  name: "edit_existing_action_in_place"
+
+  codebase:
+    files: []
+
+  prompt: |
+    In my O11 module `MyModule` (open in Service Studio), the server action
+    `DoLogout` lives in the `Authentication` folder. `getServerAction` gave me
+    its code, which starts with `var doLogout = eSpace.CreateServerAction("DoLogout");`.
+    Using the MCP Server, change its Description to "Logs the user out". Show
+    the `applyModelApiCode` call.
+
+  validation:
+    prerequisites:
+      - point: "Engages with the request"
+        description: "The response produces an `applyModelApiCode` call that changes the action's Description."
+
+      - point: "Full lambda, no Save"
+        description: "The code is a full `eSpace => { ... }` lambda with no `eSpace.Save(...)`."
+
+    skill_scoring:
+      - point: "Looks the action up instead of creating it"
+        description: "The lambda finds the existing action with `eSpace.ServerActions.Named(\"DoLogout\")` (or an equivalent lookup) and sets `.Description` in place — it does NOT call `eSpace.CreateServerAction(\"DoLogout\")`."
+
+      - point: "Explains why read-back is not replayed"
+        description: "The response notes that `get*` read-back is creation code; replaying it would silently create `DoLogout2` outside the folder, and TrueChange would not flag the duplicate."
+
+      - point: "Folder is not an obstacle"
+        description: "The response treats the folder as a `.Folder` tag on the action — `ServerActions` includes actions inside folders — and does not move or recreate the action."
+
+scenario_21:
+  name: "sql_columns_map_by_position"
+
+  codebase:
+    files: []
+
+  prompt: |
+    Through the Service Studio MCP Server, add an SQL node to the server action
+    `ListCustomers` in `MyModule` that runs
+    `SELECT {Customer}.[IsActive], {Customer}.[Name] FROM {Customer}` and returns
+    a structure `CustomerRow` that has attributes `Name` (Text) then `IsActive`
+    (Boolean). Show the `applyModelApiCode` lambda.
+
+  validation:
+    prerequisites:
+      - point: "Engages with the request"
+        description: "The response produces an `applyModelApiCode` lambda that creates an `ISQLNode` with `CreateOutput` and a `Statement`."
+
+      - point: "Full lambda, no Save"
+        description: "The code is a full `eSpace => { ... }` lambda with no `eSpace.Save(...)`."
+
+    skill_scoring:
+      - point: "Spots the positional mismatch"
+        description: "The response states that SELECT columns bind to output attributes by position (not by name or alias), so `IsActive, Name` against `Name, IsActive` is a mismatch, and fixes it by reordering the SELECT (or the structure attributes) so they line up."
+
+      - point: "Knows TrueChange won't catch it"
+        description: "The response notes the mismatch is not flagged by TrueChange and would only fail at runtime (e.g. Text assigned to Boolean)."
+
+      - point: "Reads the order back"
+        description: "The response verifies the output attribute order, e.g. a throw-probe printing `sql.Outputs.SelectMany(o => o.EntityOrStructure.Attributes.Select(a => a.Name + \":\" + a.DataType))`."
+
+scenario_22:
+  name: "traditional_table_inside_layout"
+
+  codebase:
+    files: []
+
+  prompt: |
+    My Traditional Web module `LegacyApp` is open in Service Studio. Using the
+    MCP Server, create a screen `UserList` in the `MainFlow` web flow that shows
+    the System `User` entity in a Table Records with a Name column. Show the
+    `applyModelApiCode` lambda.
+
+  validation:
+    prerequisites:
+      - point: "Engages with the request"
+        description: "The response produces an `applyModelApiCode` lambda that creates a Traditional web screen with a Preparation aggregate and a table."
+
+      - point: "Full lambda, no Save"
+        description: "The code is a full `eSpace => { ... }` lambda with no `eSpace.Save(...)`."
+
+    skill_scoring:
+      - point: "Builds inside the layout's MainContent"
+        description: "The lambda finds the screen's existing `IWebBlockInstanceWidget` (the Layout a new screen already contains) and creates the content in its `MainContent` placeholder — not with `screen.CreateWidget<...>()` on the screen root, and without adding a second layout."
+
+      - point: "Uses the Traditional TableRecords cell API"
+        description: "The table is an `OutSystems.Model.UI.Web.Widgets.ITableRecordsWidget` with `SetSourceRecordList`, and columns are built with `HeaderRow.CreateCellWidget()` / `DataRow.CreateCellWidget()` then `cell.CreateWidget<...>()` — not `CreateCell` (in the docs but not at runtime) and not the Reactive `NRWidgets.ITableRecords` pattern."
+
+      - point: "No silent substitution"
+        description: "The response does not fall back to a ListRecords; if the table can't be built it says so instead of quietly substituting."
+
+scenario_23:
+  name: "insert_into_existing_flow_keeps_layout"
+
+  codebase:
+    files: []
+
+  prompt: |
+    Module `MyModule` is open in Service Studio and I'm driving it through the
+    Service Studio MCP Server. Its existing server action `DoLogout` was laid out
+    by a developer (True branches go to the right of each If). Add a `LogMessage`
+    call as the first step after Start. Show the `applyModelApiCode` lambda and
+    explain how you handle the flow's layout.
+
+  validation:
+    prerequisites:
+      - point: "Provides a lambda"
+        description: "The response contains a full `eSpace => { ... }` lambda that inserts the LogMessage node between Start and its current target."
+
+    skill_scoring:
+      - point: "Keeps the developer's layout"
+        description: "The response does NOT re-run the full branch-aware layout pass on the existing action. Instead it shifts the nodes at or below the insertion row down by one row (using the flow's own spacing) and puts the new node in the freed slot."
+
+      - point: "Edits in place"
+        description: "The lambda looks the action up with `eSpace.ServerActions.Named(\"DoLogout\")` (or equivalent) and mutates it. It does not recreate the action."
+
+      - point: "Checks for overlaps"
+        description: "The response checks, or says to check, that no two nodes share a position after the insert."
+
+scenario_24:
+  name: "module_summary_in_one_probe"
+
+  codebase:
+    files: []
+
+  prompt: |
+    Through the Service Studio MCP Server, give me an overview of the large module
+    `BigModule`: entities and attributes, screens per UI flow, server actions,
+    roles and integrations. Don't change anything. How would you gather this
+    efficiently?
+
+  validation:
+    prerequisites:
+      - point: "Proposes a concrete approach"
+        description: "The response names the tools or code it would use to gather the inventory."
+
+    skill_scoring:
+      - point: "Uses one inventory probe"
+        description: "The response gathers the inventory with one read-only throw-probe lambda (as in examples/ProbeModuleInventory.cs) rather than one get* call per element, and explains that a throw-probe saves nothing, so it respects \"don't change anything\"."
+
+      - point: "Avoids getDataModel for orientation on a large module"
+        description: "The response notes that `getDataModel` on a large module can be very large (100k+ characters) and reserves it, or the per-element getters, for drilling into the parts that need detail."

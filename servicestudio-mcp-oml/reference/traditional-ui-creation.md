@@ -83,7 +83,7 @@ request **silently degrades**. Equivalents on Traditional:
 
 | Reactive intent | Traditional equivalent |
 |---|---|
-| `List` + On Scroll Ending infinite scroll | `IListRecordsWidget`/`ITableRecordsWidget` + classic paging (RichWidgets `List_Navigation` block driven by the aggregate's `StartIndex`/`MaxRecords`) |
+| `List` + On Scroll Ending infinite scroll | `IListRecordsWidget` (free-form rows) or `ITableRecordsWidget` (columns, recipe 5b — built differently) + classic paging (RichWidgets `List_Navigation` block driven by the aggregate's `StartIndex`/`MaxRecords`) |
 | JavaScript node in a client action | `IWebScreen.JavaScript` string (recipe 6), or an `IExpressionWidget` with `EscapeContent = false` |
 | `screen.CreateScreenAggregate(...)` | screen/block **Preparation** flow with an aggregate node (recipe 4) |
 
@@ -101,6 +101,29 @@ screen.SetTitle("\"News Feed\"");   // expression string: literal text is double
 
 > If you obtained the flow as `IUIFlow` (e.g. via a broader query), `CreateScreen` returns the
 > base `IScreen` — cast it: `var screen = (IWebScreen)flow.CreateScreen("PostFeed");`.
+
+### A new screen already has a Layout — build inside its `MainContent`
+
+`CreateScreen` returns a screen that **already contains one `IWebBlockInstanceWidget`**: the
+module's Layout block (verified 2026-10-17). In the template tested, its placeholders were
+`Header | Menu | Breadcrumbs | Title | Actions | MainContent | Footer`. Put your content
+inside the placeholder, not on the screen root:
+
+```csharp
+var layout = screen.Widgets.OfType<OutSystems.Model.UI.Web.Widgets.IWebBlockInstanceWidget>().Single();
+var main = layout.PlaceholdersContent.Single(p => p.Placeholder.Name == "MainContent");
+var container = main.CreateWidget<OutSystems.Model.UI.Web.Widgets.IContainerWidget>();
+```
+
+`screen.CreateWidget<…>()` adds a widget **beside** the Layout instance, outside every
+placeholder, and TrueChange says nothing about it. At runtime that content renders **after the
+footer**, and the page's `MainContent` area stays empty, so the screen looks blank (verified
+2026-10-17 on a published screen). Don't add a second Layout instance either.
+A page heading belongs in the layout's `Title` placeholder, which the theme styles as the page
+title. Everything else the user asked for goes in `MainContent`, and nothing goes at the screen root.
+Placeholder names come from the module's layout block. If `MainContent` isn't there, list them
+first (`layout.PlaceholdersContent.Select(p => p.Placeholder.Name)`) or read a sibling screen
+with `getScreenTraditional`. Finally, confirm the screen root holds exactly one block instance.
 
 ## Recipe 2 — Create a Web block
 
@@ -120,7 +143,8 @@ block.Description = "Dropdown panel listing unread notifications.";
 parent-first, then descend. **Note the fully-qualified widget types** (CS0104 prophylaxis above).
 
 ```csharp
-var container = screen.CreateWidget<OutSystems.Model.UI.Web.Widgets.IContainerWidget>();
+// `main` is the layout's MainContent placeholder (Recipe 1) — not the screen root.
+var container = main.CreateWidget<OutSystems.Model.UI.Web.Widgets.IContainerWidget>();
 
 // Text: a plain settable string (NOT an expression)
 var heading = container.CreateWidget<OutSystems.Model.UI.Web.Widgets.ITextWidget>();
@@ -180,7 +204,31 @@ var content = row.CreateWidget<OutSystems.Model.UI.Web.Widgets.IExpressionWidget
 content.SetValue("GetPosts.List.Current.Post.Content");
 ```
 
-`ITableRecordsWidget` follows the same `SetSourceRecordList` pattern for a tabular layout.
+## Recipe 5b — TableRecords (columns)
+
+`ITableRecordsWidget` takes its source the same way (`SetSourceRecordList`), but it is **not**
+built like a ListRecords. It has no `CreateWidget<T>`. Each column is a **cell** in `HeaderRow`
+and a cell in `DataRow`, and the widgets go inside the cells (verified 2026-10-17, TrueChange
+clean):
+
+```csharp
+var tbl = main.CreateWidget<OutSystems.Model.UI.Web.Widgets.ITableRecordsWidget>();
+tbl.SetSourceRecordList("GetUsers.List");
+
+var nameHeader = tbl.HeaderRow.CreateCellWidget();
+nameHeader.CreateWidget<OutSystems.Model.UI.Web.Widgets.ITextWidget>().Text = "Name";
+var nameCell = tbl.DataRow.CreateCellWidget();
+nameCell.CreateWidget<OutSystems.Model.UI.Web.Widgets.IExpressionWidget>().SetValue("GetUsers.List.Current.User.Name");
+// one HeaderRow cell + one DataRow cell per column, in column order
+```
+
+- **The generated docs are wrong here.** `docs/OutSystems.Model.UI.Web.Widgets.Generated.cs`
+  lists `IRowWidget.CreateCell(...)`, but the runtime interface exposes `CreateCellWidget` /
+  `CreateCellWidgetWithWidth`, and `CreateCell` fails with CS1061.
+- The Reactive pattern (`ServiceStudio.Plugin.NRWidgets.ITableRecords`, `.SetSource`,
+  `HeaderRow.CreateWidget<IHeaderCell>()`, `.Row`) does not carry over to Traditional.
+- If the table won't build, fix it. Don't fall back to a ListRecords without telling the user
+  (SKILL.md § 3).
 
 ## Recipe 6 — Client-side JavaScript via `IWebScreen.JavaScript`
 

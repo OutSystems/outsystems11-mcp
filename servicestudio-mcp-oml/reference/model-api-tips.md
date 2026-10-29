@@ -47,9 +47,44 @@ When working with the Model API, always ensure you are using the correct interfa
 In addition to making sure that the flow is logically correct, you should also ensure that the corresponding graph is displayed correctly in Studio when the user opens the action. Model API offers methods (`Above`, `Below`, `ToTheLeftOf`, and `ToTheRightOf`), available in the `OutSystems.Model` namespace, that allow you to specify the relative position of a new node with respect to an existing node. It also offers methods that allow you to simultaneously connect a node to an existing node and define its relative position to the existing node. These methods are: `ConnectedAbove`, `ConnectedBelow`, `ConnectedToTheLeftOf`, and `ConnectedToTheRightOf`, available in the `OutSystems.Model` namespace. You should prefer using these methods over manually setting the Target property of the node, since the latter only connects the node logically but does not take care of the visual representation. However, when connecting a new node to an existing node that does not have a `Target` property (e.g., `IIfNode`, `ISwitchNode`), you cannot use the `Connected*` methods and therefore still need to manually set the connection (e.g., for `IIfNode`, you need to set either the `TrueTarget` or `FalseTarget` property).
 
 > **Layout is a completion gate, not optional polish.** Any action that gained new or spliced nodes must get a full visual layout pass before you merge — see SKILL.md § "Flow layout is a completion gate". What the gate requires, in order:
-> 1. **Lay out the whole touched flow with a BFS pass** that walks from the action's Start node along each node's `Connectors` and assigns `HorizontalPosition` / `VerticalPosition` level by level. The host logs `Action Flow auto arrange completed` on stderr after a save, but that does **not** position hand-wired nodes (verified 2026-09-30: three manually targeted nodes stayed stacked at one coordinate), and `ArrangeAllNodes()` alone doesn't untangle spliced nodes either.
+> 0. **New flow or existing flow?** The full pass in step 1 is for flows you created in this task. For an existing flow you edited, keep the developer's layout and insert locally instead — see "Inserting into an existing flow" below.
+> 1. **Lay out the whole touched flow with the branch-aware pass** below, which walks from the action's Start node and assigns `HorizontalPosition` / `VerticalPosition` so that no two nodes share a cell and no forward edge points upward. The host logs `Action Flow auto arrange completed` on stderr after a save, but that does **not** position hand-wired nodes (verified 2026-09-30: three manually targeted nodes stayed stacked at one coordinate), and `ArrangeAllNodes()` alone doesn't untangle spliced nodes either.
 > 2. **Prefer the `Connected*` helpers** over manually setting `Target` — they set both the logical link and the visual position in one step. For nodes with no `Target` (e.g. `IIfNode`, `ISwitchNode`) wire `TrueTarget` / `FalseTarget` / `OtherwiseTarget` yourself, then position explicitly.
 > 3. **Verify links before merging.** Read back `node.Connectors.Select(c => c.Target)` (or the relevant `*Target`) and confirm the endpoints are what you intended; report them through the throw-probe ([`lambda-contract.md`](lambda-contract.md) § "Sandbox") rather than deferring the check. (Earlier builds silently dropped `.Target` on a freshly created node; this did not reproduce on 2026-09-30 — manual `Target` / `TrueTarget` / `FalseTarget` / `CycleTarget` all created connectors — but checking costs nothing.)
+
+##### Inserting into an existing flow
+
+Developers lay out their own flows, often with conventions such as True branches going right.
+Re-running the full layout pass on their action rearranges all of it. When you add a node to an
+existing flow, make room locally instead (verified 2026-10-17 on an 11-node flow: 9 nodes shifted
+one row, the Start node and a comment above the insertion point left alone, 0 overlaps):
+
+```csharp
+var act = eSpace.ServerActions.Named("DoLogout");
+var start = act.Nodes.OfType<OutSystems.Model.Logic.Nodes.IStartNode>().Single();
+var before = start.Target;                       // the new node goes between Start and this
+var b = (OutSystems.Model.IFlowNode)before;
+// Row height = the flow's own spacing; fall back to the 1371 grid.
+int row = Math.Abs(b.VerticalPosition - ((OutSystems.Model.IFlowNode)start).VerticalPosition);
+if (row < 600) row = 1371;
+int y0 = b.VerticalPosition;
+// 1) Shift every node at or below the insertion row, in all columns, comments included.
+foreach (var n in act.Nodes.OfType<OutSystems.Model.IFlowNode>().Where(n => n.VerticalPosition >= y0))
+    n.VerticalPosition += row;
+// 2) Put the new node in the freed slot and wire it in.
+var log = act.CreateNode<OutSystems.Model.Logic.Nodes.IExecuteServerActionNode>("LogMessage");
+log.HorizontalPosition = b.HorizontalPosition;
+log.VerticalPosition = y0;
+log.Action = eSpace.References.SelectMany(r => r.ServerActions).First(a => a.Name == "LogMessage");
+start.Target = log;
+log.Target = before;
+// 3) Check: no two nodes share a cell.
+```
+
+Inserting into a branch works the same way: use the branch node's position as `y0`, and restrict
+the shift to nodes in that branch's column and the columns to its right if the other branches
+should stay put. The check is "no shared cell". Don't require "no upward edge" on a flow you
+didn't draw, because existing layouts can contain intentional quirks.
 
 ##### Walking a flow — typed, no reflection
 
@@ -60,15 +95,24 @@ Reflection is rejected by the MCP code sandbox, and none is needed:
 - Positions are `IFlowNode.HorizontalPosition` / `VerticalPosition` (settable `int`s).
 - `node.GetType().Name` is allowed if you need to print a node's kind (the concrete RaiseException node reports `RaiseError`; SQL reports `AdvancedQuery`; exception handlers `ErrorHandler`).
 
-##### The validated BFS layout pass
+##### The validated layout pass
 
-Full lambda: [`../examples/LayoutActionFlow.cs`](../examples/LayoutActionFlow.cs) (verified live 2026-09-30 on a flow with an SQL node, a For Each and an exception handler). Its rules:
+Full lambda: [`../examples/LayoutActionFlow.cs`](../examples/LayoutActionFlow.cs). It was verified live on 2026-10-17 on a flow with an If whose branches merge, a 3-way Switch, a For Each and an exception handler: 0 overlapping nodes, 0 upward edges, 0 line crossings. The earlier first-slot BFS gave 6 overlaps and 6 crossings on the same flow. It stacked all Switch branches and the loop body on one cell, and dragged the merge point into the False column. The pass follows these rules:
 
 - Grid units are **1828 × 1371**, origin **(3200, 800)**.
-- BFS from Start over `Connectors`; a node keeps the **first** slot it is given, so For Each loop-backs and merge points never inflate depth (a naive "relax to max depth" BFS pushes `ForEach` flows ~100k units off-canvas — observed live: depth 81+). Cap depth at 40.
-- An `If`'s `FalseTarget` and a `ForEach`'s `CycleTarget` go **one column right**; a loop body sits on the For Each's row.
-- **Exception-handler paths aren't reachable from Start** — lay each handler chain out in its own column to the right.
+- **Branch-aware successors.** The roles come from the node type, not the order of `Connectors`:
+  - **If:** `TrueTarget` straight down, `FalseTarget` one column right.
+  - **Switch:** condition *i* goes *i* columns right, in `Conditions` order; `OtherwiseTarget` goes straight down.
+  - **For Each:** `CycleTarget` one column right **on the For Each's row**; `Target` (the exit) goes straight down.
+- **Find the back edges first** (a DFS from Start: an edge to a node still on the stack is a loop-back) and ignore them for placement. That way loops can't inflate depth. A naive "relax to max depth" over all edges pushed For Each flows about 100k units off the canvas (depth 81+ observed).
+- **Place nodes in topological order over the forward edges.** row = max over predecessors, so a merge sits below its deepest branch. column = min over predecessors, so a merge returns to the main column.
+- **Collision shift.** If the target cell is taken, move one column right until it's free, and let the node's successors follow it.
+- **Exception-handler paths aren't reachable from Start.** Place each handler chain with the same rules, starting two columns right of everything placed so far.
 - **Skip nodes the walk never reached** rather than defaulting them to (0, 0), which stacks them on top of Start.
+- **Final check before you merge:** no two nodes share a cell, and no forward edge points upward. The example throws `LAYOUT-CHECK failed` otherwise.
+- The positions are a node layout only. Connectors have no waypoint or bend API, so in a very dense flow a crossing can still remain.
+
+The relative helpers `Above`, `Below`, `ToTheLeftOf`, `ToTheRightOf` and `ConnectedAbove`, `ConnectedBelow`, `ConnectedToTheLeftOf`, `ConnectedToTheRightOf` all exist (verified 2026-10-17), although the generated `docs/` list only `ConnectedBelow`. `ConnectedBelow` defaults to a 1773-unit separation, so the layout pass's grid overrides build-time positions; run it last.
 
 Applies to server/client/screen actions, service actions and exposed REST methods alike — all expose `Nodes` with typed `Connectors`.
 

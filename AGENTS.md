@@ -31,6 +31,8 @@ disagree.
 
 - **Call `createSessionToken` exactly once, first** (`{ "clientName": "…" }`).
   The user approves a dialog in Service Studio; the result text is the token.
+  The call waits for that approval with no signal to you, so tell the user to
+  approve the request in Service Studio before you call it.
   Pass it as a top-level `sessionToken` on every later call and reuse it across
   reconnects — never request a second one.
 - **Every tool except `listApps` wraps its arguments in `input`:**
@@ -41,6 +43,18 @@ disagree.
   `input: { eSpaceName }`. (`omlRefreshReferences`, `omlPublish` and `getRoleExceptions` take
   `input: { eSpaceName }`; send the token to them too, even though their schemas
   don't declare it.)
+- **Summarise a module with one probe**, not one getter per element:
+  `servicestudio-mcp-oml/examples/ProbeModuleInventory.cs` returns the whole inventory in a
+  few thousand characters. `getDataModel` on a large module can exceed 100k. The probe
+  is a read (it throws before saving), so use it even when the user says not to change
+  anything. It isn't a Beta write.
+- **Keep the developer's layout when you edit an existing flow.** Shift the nodes below the
+  insertion point and place the new node in the gap. Use the full layout pass only on flows you
+  created (SKILL.md § 3.1).
+- **Modules are addressed by name only.** `listApps` doesn't say which server or
+  environment a module came from, and each module publishes to its own server. If
+  the user has modules from several environments open, confirm which one they mean
+  (SKILL.md § 8).
 
 ## Non-negotiable rules for `applyModelApiCode`
 
@@ -60,6 +74,14 @@ disagree.
 - **Read before you write:** call `getDataModel` (or the matching `get*`) first
   and pattern-match its output. Code-returning reads require `includeJson`
   (always pass `"Never"`).
+- **Edit in place; never replay read-back.** `get*` output is *creation* code
+  (`eSpace.CreateServerAction("X")` …). Replaying it creates a silently renamed
+  duplicate (`X2`, outside its folder) that TrueChange doesn't flag. Look the
+  element up (`eSpace.ServerActions.Named("X")` finds actions in folders too) and
+  mutate it.
+- **Don't silently substitute.** If the widget or element you were asked for
+  won't create (for example a Traditional TableRecords), fix the error or report
+  it. Never quietly build something else instead.
 - **A clean response is not proof of mutation.** Verify with a follow-up `get*`
   (guard against the *silent no-op*; read back `.Name` too — taken or reserved
   names are silently renamed, e.g. `GetOrder` → `GetOrder2`), and scan

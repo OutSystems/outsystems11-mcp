@@ -34,6 +34,25 @@ sql.Statement = "SELECT {Order}.* FROM {Order} WHERE {Order}.[Amount] >= @MinAmo
 sql.SetMaxRecords(100);                               // optional; an expression, not an int property
 ```
 
+- **SELECT columns bind to output attributes by position, not by name.** The number of columns
+  and their order must match the attributes of each output entity or structure exactly. With
+  several outputs, the columns fill them in `Outputs` order. Column aliases (`AS IsActive`) don't
+  change the mapping. Prefer `{Entity}.*`. When you select explicit columns into a structure,
+  create the structure's attributes in the exact SELECT order, or reorder them
+  (`MoveAfterSibling`, [`model-api-tips.md`](model-api-tips.md)).
+  **TrueChange does not flag a mismatch** (verified 2026-10-17: aliased columns in swapped order,
+  and a SELECT with an extra column, both passed with no message). The mismatch only fails at
+  runtime, and opaquely: a published REST method whose SQL swapped a Text and a Boolean column
+  returned `500 {"Errors":["Error executing query."]}`, with nothing pointing at column order
+  (verified 2026-10-17). Read the order back before you finish:
+  `throw new Exception("PROBE:" + string.Join(",", sql.Outputs.SelectMany(o => o.EntityOrStructure.Attributes.Select(a => a.Name + ":" + a.DataType))));`
+  → `Name:Text (…),IsActive:Boolean (…)`. Compare it with your SELECT list.
+- **The SQL node's list type is `<Structure> Record List`**, not `<Structure> List` (`sql.Type`).
+  Assigning `Q.List` to a `<Structure> List` output is fine: the platform inserts an implicit,
+  non-visible wrapping conversion, which read-back renders as `Q.List mapTo { }` or as a
+  conversion block with `UseImplicitConversion: True` (verified 2026-10-17). That's expected,
+  not an error. To assign without a conversion, type the output as the node's own type:
+  `output.DataType = sql.Type;`.
 - Output rows are addressed as `<Node>.List.Current.<Output>.<Attr>` (e.g. `GetBigOrders.List.Current.Order.Amount`).
 - `ISQLInputParameter.ExpandInline` exists for inline (unescaped) parameters — avoid it unless you
   sanitise with `EncodeSql(...)`; it is an SQL-injection vector.
@@ -54,7 +73,7 @@ loop.Target = end;              // exit path
 
 - Address the current row through the list: `<Source>.List.Current…`.
 - Optional: `SetStartIndex(...)`, `SetMaximumIterations(...)`.
-- In the layout pass, the body goes one column right on the For Each's row ([`model-api-tips.md`](model-api-tips.md) § "The validated BFS layout pass").
+- In the layout pass, the body goes one column right on the For Each's row ([`model-api-tips.md`](model-api-tips.md) § "The validated layout pass").
 
 ## Exception handlers
 
@@ -96,6 +115,20 @@ m.CreateOutputParameter("Order").DataType = order;
 - Service defaults (read back): `BaseURL = "/rest/<Api>"`, `Authentication = None`,
   `HttpSecurity = SSL`, `InternalAccess = No`, `ShowDocumentation = Yes`, `CrossSiteRequests = Allow`.
   **Set `Authentication` deliberately** — the default exposes the API unauthenticated.
+- **Don't use `CrossSiteRequests = Restrict` to lock down CORS.** It can be set and TrueChange is
+  silent, but it has no runtime effect (verified 2026-10-17: after merge and publish, a request
+  with a foreign `Origin` still got `Access-Control-Allow-Origin: *`, preflight included).
+  See SKILL.md § 8.
+- **Reading exposed APIs back.** `getIntegrations` lists exposed (`IRestService`) and consumed
+  (`IRestClient`) REST integrations alike (verified 2026-10-17). To count them by kind, use
+  `runQuery` with `query: "Root { Integrations { Name } }"` and
+  `executionOptions: { "includeTypeName": true }`. Each entry then carries
+  `type_: "RestService"` (exposed) or `"RestClient"` (consumed). `getActionNames` with
+  `objectType: "service"` lists *service actions*, not REST methods. The MCP sees only the
+  modules open in Service Studio (and their references), so a cross-module count needs each
+  module open. To change an existing API, look it up with
+  `eSpace.Integrations.OfType<ServiceStudio.Plugin.RESTService.IRestService>().First(s => s.Name == "X")`.
+  Calling `CreateIntegration` again makes a renamed copy.
 - Callbacks: `api.CreateOnRequestCallback()` / `CreateOnResponseCallback()`; with Basic/Custom
   authentication an `OnAuthentication` flow is available.
 - Take identifiers as Long Integer inputs and convert with `LongIntegerToIdentifier(...)`.
@@ -260,6 +293,10 @@ check, and it covers far more than a headless tool gets. Observed 2026-09-30:
 | Site property without default | not flagged | — |
 | Nodes stacked on one coordinate | not flagged — run the layout pass | — |
 | Exposed REST API left with `Authentication = None` | not flagged | — |
+| SQL columns in a different order / count than the output attributes (verified 2026-10-17) | **not flagged** — fails at runtime | — |
+| Duplicate created by `CreateServerAction` on a taken name (verified 2026-10-17) | not flagged as a duplicate (only `InvalidFlow_NoStart` / unused) | — |
+| `CrossSiteRequests = Restrict` on an exposed REST API (verified 2026-10-17) | not flagged | — |
+| Widgets created at a Traditional screen's root, beside the Layout block (verified 2026-10-17) | not flagged | — |
 
 Treat the **warnings** above as defects too: a cross join silently multiplies rows, and an agent that only
 filters on `Error` will miss it.

@@ -39,7 +39,11 @@ eSpace => {
     // 3) Widget tree. Widget types are FULLY QUALIFIED: ITextWidget exists in BOTH
     //    OutSystems.Model.UI.Web.Widgets and OutSystems.Model.UI.Mobile.Widgets (in scope by default),
     //    so a bare 'ITextWidget' is a CS0104 ambiguity. Do NOT add 'using OutSystems.Model.UI.Mobile.Widgets;'.
-    var container = screen.CreateWidget<OutSystems.Model.UI.Web.Widgets.IContainerWidget>();
+    //    A new screen already holds ONE Layout block instance. Build inside its MainContent placeholder:
+    //    widgets created on the screen root land beside the layout and TrueChange stays silent.
+    var layout = screen.Widgets.OfType<OutSystems.Model.UI.Web.Widgets.IWebBlockInstanceWidget>().Single();
+    var mainContent = layout.PlaceholdersContent.Single(p => p.Placeholder.Name == "MainContent");
+    var container = mainContent.CreateWidget<OutSystems.Model.UI.Web.Widgets.IContainerWidget>();
 
     var heading = container.CreateWidget<OutSystems.Model.UI.Web.Widgets.ITextWidget>();
     heading.Text = "Latest posts";   // ITextWidget.Text is a plain string, not an expression.

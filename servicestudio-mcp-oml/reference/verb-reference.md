@@ -169,14 +169,14 @@ and `listApps` return structured objects.
 
 | Tool | Args | Returns |
 |---|---|---|
-| `getActionNames` | `objectType:"client"\|"server"\|"service"` | JSON array of top-level action names |
+| `getActionNames` | `objectType:"client"\|"server"\|"service"` | JSON array of `{Name, Description, IsReferenced}` for the module's actions, including those inside folders, plus referenced ones (`IsReferenced: true`) |
 | `getServerAction` | `objectName`, `includeJson:"Never"` | One server action with its flow nodes |
 | `getClientAction` | `objectName`, `includeJson:"Never"` | One client action |
 | `getServiceAction` | `objectName`, `includeJson:"Never"` | One service action |
 | `getEvents` | `includeJson:"Never"` | Global events defined in this module |
 | `getEventHandlers` | `includeJson:"Never"` | Global event handlers |
 | `getTimers` | `includeJson:"Never"` | Timers defined in this module |
-| `getIntegrations` | `includeJson:"Never"` | Integrations (REST / SOAP / SAP) defined or consumed |
+| `getIntegrations` | `includeJson:"Never"` | Integrations (REST / SOAP / SAP), both exposed (`IRestService`) and consumed (`IRestClient`), as creation code (verified 2026-10-17) |
 
 > The parameter is `objectType` (not `actionType`); it comes from the sidecar's
 > `GetModelObjectNameByTypeInput` record.
@@ -251,7 +251,7 @@ namespaces define an `IExternalSite`).
 
 | Tool | Args | Returns |
 |---|---|---|
-| `runQuery` | `query:string` (ModelQL; starts with `Root { … }`, selection sets mandatory; e.g. `Root { ServerActions { Name } }`), optional `executionOptions.includeTypeName:bool` | `QueryESpaceOutput` — matching model elements as JSON |
+| `runQuery` | `query:string` (ModelQL; starts with `Root { … }`, selection sets mandatory; e.g. `Root { ServerActions { Name } }`. `Screens` is **not** a field on `Root`, despite the example in the tool description — query screens as `MobileFlows { Name Nodes { Name } }` or `WebFlows { Name Nodes { Name } }` (verified 2026-10-17). Large selections return big JSON: prefer `examples/ProbeModuleInventory.cs` for a whole-module inventory), optional `executionOptions.includeTypeName:bool` | `QueryESpaceOutput` — matching model elements as JSON |
 | `getValidationMessages` | optional `filter:string[]` (subset of `["info","warning","error"]`; empty/null = all; returned `type`s are capitalised) | `{ validationMessages: ValidationMessage[] }` — TrueChange validation against the current pointer |
 | `getSerializedObject` | — | Raw JSON serialization of an object |
 | `getSerializedObjectByKey` | `objectKey:string` | Object fetched by key, serialized as JSON |

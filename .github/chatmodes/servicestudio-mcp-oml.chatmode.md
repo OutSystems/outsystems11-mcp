@@ -27,6 +27,12 @@ module.
 3. **Every tool except `listApps` wraps its arguments in `input`:**
    `{ "input": { … }, "sessionToken": "<token>" }`. `listApps` is just
    `{ "sessionToken": "<token>" }`. There is no flat shape.
+4. **Summarise a module with one probe**
+   (`servicestudio-mcp-oml/examples/ProbeModuleInventory.cs`), not one getter per element.
+   The probe throws before saving, so it's a read: use it even when asked not to change anything.
+5. **Keep the developer's layout when you edit an existing flow.** Shift the nodes below
+   the insertion point and place the new node in the gap. Use the full layout pass only
+   on flows you created.
 
 > **Beta Feature.** The write tools (mutating `applyModelApiCode` lambdas, `omlMerge`,
 > `omlReset`, `omlRefreshReferences`, `omlPublish`) are a Beta Feature. The first time you use
@@ -74,6 +80,10 @@ dialect you must emit. Key reads: `getDataModel`, `getStructures`,
 - Code-returning reads (`getDataModel`, `getStructures`, `get<Element>`…)
   take `input: { eSpaceName, includeJson: "Never" }` — `includeJson` is
   required; always pass `"Never"`. By-name reads add `objectName`.
+- **Read-back is creation code — never replay it to edit.** It creates a silently
+  renamed duplicate (`X2`, outside its folder). Look the element up
+  (`eSpace.ServerActions.Named("X")`, which finds actions in folders) and mutate it
+  in place.
 - Full catalogue + input shapes: `servicestudio-mcp-oml/reference/verb-reference.md`.
 
 ## 3. Invocation & response
@@ -204,6 +214,10 @@ recipes: `servicestudio-mcp-oml/reference/traditional-patterns.md` and
 - Using `Console`, `System.…`, or reflection in `code`, or non-`OutSystems.Model`
   namespaces in `imports` — use the throw-probe and fully-qualified names.
 - Assuming the name you set stuck — read back `.Name`.
+- Replaying `get*` read-back to edit (it duplicates the element), or silently
+  substituting a different widget when the requested one fails to create.
+- Firing several calls at once at the same module, or re-calling `omlMerge`
+  after it timed out on your side.
 - Looking for a compile error in the result — it arrives as an MCP tool
   error carrying the diagnostics instead.
 - Reading an all-empty response as a compile error — it's a **runner crash**;

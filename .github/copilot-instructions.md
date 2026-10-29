@@ -24,6 +24,12 @@ condensed restatement; `SKILL.md` wins if they ever disagree.
   `{ "sessionToken": "<token>" }`. `applyModelApiCode` →
   `input: { eSpaceName, code, imports }` (all required); `omlMerge` →
   `input: { eSpaceName, mutatedOmlPath }`; `omlReset` → `input: { eSpaceName }`.
+- **Summarise a module with one probe**
+  (`servicestudio-mcp-oml/examples/ProbeModuleInventory.cs`), not one getter per element.
+  The probe throws before saving, so it's a read: use it even when asked not to change anything.
+- **Keep the developer's layout when you edit an existing flow.** Shift the nodes below the
+  insertion point and place the new node in the gap. Use the full layout pass only on flows
+  you created.
 
 ## Non-negotiable rules for `applyModelApiCode`
 
@@ -42,6 +48,11 @@ condensed restatement; `SKILL.md` wins if they ever disagree.
 - **Read before you write:** call `getDataModel` (or the matching `get*`) first
   and pattern-match its output. Code-returning reads require `includeJson`
   (always pass `"Never"`).
+- **Edit in place; never replay read-back.** `get*` output is *creation* code;
+  replaying it makes a silently renamed duplicate (`X2`, outside its folder).
+  Look the element up (`eSpace.ServerActions.Named("X")`, which finds actions in
+  folders) and mutate it. If a requested widget won't create, fix it or report
+  it — never silently build a different one.
 - **A clean response is not proof of mutation.** Verify with a follow-up `get*`
   (guard against the *silent no-op*; read back `.Name` — taken or reserved names
   are silently renamed, e.g. `GetOrder` → `GetOrder2`), and scan

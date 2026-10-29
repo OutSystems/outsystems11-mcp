@@ -95,11 +95,11 @@ The MCP server is embedded in Service Studio, but it does **not** start automati
 2. Go to **Edit > MCP Server**.
 3. Confirm the **MCP server port** (default `41820`) and click **Start MCP Server**.
 
-The dialog then shows the **MCP server URL** and the exact **Claude Code command** to register it, each with its own **Copy** button — you can copy the command straight from here instead of retyping it in step 3 below.
+The dialog then shows the **MCP server URL**, with a **Copy** button. Use that URL in the command in step 3 below. The default is `http://127.0.0.1:41820/mcp`; adjust the port if you changed it.
 
 ### 3. Register the MCP server
 
-Before you open Claude Code and add the skill, register the Service Studio MCP server so your agent knows where to reach it. In a terminal, run the command you copied in step 2 (or type it out):
+Before you open Claude Code and add the skill, register the Service Studio MCP server so your agent knows where to reach it. In a terminal, run this command, using the MCP server URL from step 2:
 
 ```
 claude mcp add --transport http servicestudio http://127.0.0.1:41820/mcp --scope user

@@ -25,6 +25,8 @@ eSpace => {
     sqlMinAmount.DataType = eSpace.DecimalType;
     getBigOrders.SetArgumentValue(sqlMinAmount, "MinAmount");
     getBigOrders.CreateOutput(order);
+    // SELECT columns map to the output's attributes BY POSITION (aliases don't matter), and TrueChange
+    // doesn't flag a mismatch. {Order}.* is always aligned; explicit columns must follow attribute order.
     getBigOrders.Statement = "SELECT {Order}.* FROM {Order} WHERE {Order}.[Amount] >= @MinAmount";
 
     // For Each: CycleTarget = first body node; the last body node's Target = the For Each; Target = exit path.

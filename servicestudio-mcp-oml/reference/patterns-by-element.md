@@ -419,11 +419,44 @@ an expression built from an aggregate name the host auto-renamed), delete the br
 action and recreate it rather than patching the bad expression in place (verified working):
 
 ```csharp
-eSpace.ServerActions.First(a => a.Name == "GetEventRegistrationCount").Delete();
-// …then recreate the action correctly, reading aggName back as shown above.
+var broken = eSpace.ServerActions.First(a => a.Name == "GetEventRegistrationCount");
+var folder = broken.Folder;          // keep it: the recreate otherwise lands outside the folder
+broken.Delete();
+// …then recreate the action correctly, reading aggName back as shown above, and finish with:
+// recreated.Folder = folder;
 ```
 
 Re-read with `getValidationMessages` after the recreate to confirm no entry has `type` equal to `"Error"`.
+Prefer editing in place (next section) whenever the fix is local, such as rewriting one expression.
+
+## Editing an existing element — look it up, never replay read-back
+
+`get*` read tools return an existing element as **creation code**. For example,
+`getServerAction` emits `eSpace.CreateServerAction("DoLogout")` followed by
+`doLogout.Folder = eSpace.Folders.Named("Authentication")`. Replaying that code doesn't
+edit anything: it creates a second action, and the model renames it silently.
+
+Verified 2026-10-17 on a module whose `DoLogout` lives in folder `Authentication`:
+
+- `eSpace.ServerActions.Named("DoLogout")` **finds** it. The `ServerActions` collection includes
+  actions inside folders, because a folder is only a `.Folder` tag on the element (`IFolder`,
+  listed in `eSpace.Folders`). `ClientActions` has the same `.Folder` shape in the API; that
+  case wasn't exercised live.
+- `eSpace.CreateServerAction("DoLogout")` returns **`DoLogout2` with `Folder == null`**: a
+  copy outside the folder. TrueChange reports it only as an action with no Start node and as
+  unused. It never mentions the duplicate.
+
+So to edit, look the element up and mutate it in place:
+
+```csharp
+var act = eSpace.ServerActions.Named("DoLogout");   // works for actions in folders too
+act.Description = "Logs the user out and redirects.";
+// rewrite an expression in place: read it with ToString() (SKILL.md § 1.1), then SetValue / SetCondition
+```
+
+If a create ever returns a name you didn't ask for (`X2`), you made a duplicate. Delete
+it and edit the original instead. To list actions with their folders:
+`throw new Exception("PROBE:" + string.Join(",", eSpace.ServerActions.Select(a => a.Name + "@" + (a.Folder == null ? "-" : a.Folder.Name))));`
 
 ## Silent renames — read `.Name` back after every create
 
@@ -476,7 +509,11 @@ Verified live 2026-09-30 on a Reactive module:
   only the module's own roles.
 - The `AnonymousAccess_NoPermissionsNoRoles` warning ("only accessible by authenticated users, but there are
   no roles") appears on screens of a module that has no roles of its own; it disappears once a role exists.
-  Don't read it as proof of whether a screen is public.
+  Don't read it as proof of whether a screen is public. It appears even on screens that hold the
+  Anonymous role, the template's own Login screen included. All of them read `AnonymousAccess = False`,
+  so the sidecar's validator apparently goes by that legacy flag rather than the role. A Traditional screen with the Anonymous role
+  served its page to an anonymous request at runtime (verified 2026-10-17). Don't "fix" the warning
+  by setting `AnonymousAccess`, which `omlMerge` drops anyway.
 
 Example: [`../examples/SetScreenAccess.cs`](../examples/SetScreenAccess.cs).
 
@@ -502,7 +539,7 @@ when a `Connected*` helper would do — the latter handles both logical and
 visual layout. See [`model-api-tips.md`](model-api-tips.md) §
 "Manipulating Nodes in Logic Flows".
 
-**Completion gate:** any action with new or spliced nodes must get a full BFS
+**Completion gate:** any action with new or spliced nodes must get the full branch-aware
 layout pass before merge (`ArrangeAllNodes()` alone is not enough), and splice
 links must be verified because `.Target` silently no-ops on fresh
 `CreateNode`'d nodes. Full rule in SKILL.md § "Flow layout is a completion

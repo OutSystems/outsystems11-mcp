@@ -23,7 +23,9 @@ Do this for the request below:
    before writing anything.
 2. **Mutate** with `applyModelApiCode`, `input: { eSpaceName, code, imports }`,
    passing a full `eSpace => { ... }` lambda that ends in `}` and never calls
-   `eSpace.Save`. Prefer lifting a matching example from
+   `eSpace.Save`. To change an existing element, look it up
+   (`eSpace.ServerActions.Named("X")`) and mutate it. Never replay `get*`
+   read-back, which is creation code and makes a renamed duplicate. Prefer lifting a matching example from
    `servicestudio-mcp-oml/examples/*.cs`. Sandbox: no `Console`, `System.…` or
    reflection in `code`; `imports` only `OutSystems.Model.*` (fully qualify
    `ServiceStudio.Plugin.*` types). To inspect something, end the lambda with
