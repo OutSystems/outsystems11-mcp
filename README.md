@@ -59,11 +59,11 @@ This repo distributes the OutSystems 11 MCP skill — it teaches your agent how 
 ```
 outsystems11-mcp/
 ├─ servicestudio-mcp-oml/        # the skill: SKILL.md + reference/ + examples/ + docs/
+│  └─ reference/mcp-design-choices.md  # MCP host design choices & caveats worth knowing before you use the Service Studio MCP
 ├─ AGENTS.md                     # cross-tool agent instructions (the contract, condensed)
 ├─ CLAUDE.md                     # Claude Code's native instructions file
 ├─ ARCHITECTURE.md               # system boundary + the tenets governing skill content
 ├─ CONTRIBUTING.md               # how to change this repo
-├─ MCP-DESIGN-CHOICES.md         # MCP host design choices & caveats worth knowing before you use the Service Studio MCP
 ├─ .github/
 │  ├─ copilot-instructions.md    # Copilot always-on instructions
 │  ├─ chatmodes/                 # VS Code Copilot chat mode

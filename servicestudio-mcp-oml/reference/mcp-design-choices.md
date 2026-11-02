@@ -1,3 +1,5 @@
+# MCP host design choices & caveats
+
 ## 1. OMLs being worked on live in a temp folder
 
 ```
