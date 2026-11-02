@@ -220,9 +220,20 @@ Two expression-language points that bite here:
   `margin-top` / `font-size` rules.
 - **`Pagination`** inputs: `StartIndex`, `MaxRecords`, `TotalCount`.
   - Pass `TotalCount` as `LongIntegerToInteger(Agg.Count)`.
-  - Wire the handler with
-    `pg.EventHandlers.First(h => h.Event.Name == "OnNavigate").Handler = screenAction`.
-    The screen action takes `NewStartIndex` (Integer).
+  - Wire the handler **and** its argument:
+    ```csharp
+    var h = pg.EventHandlers.First(x => x.Event.Name == "OnNavigate");
+    h.Handler = refresh;
+    h.SetArgumentValue(refresh.InputParameters.Named("NewStartIndex"), "NewStartIndex");
+    ```
+    The screen action takes `NewStartIndex` (Integer). Setting only `.Handler` saves clean and
+    validates, but page 2 never loads: the action runs with its default `NewStartIndex = 0`.
+    The new start index is the event's own parameter, so the expression is the bare name
+    `NewStartIndex`. Verified live 2026-10-14: after the fix, page 2 showed "21 to 40 of 49".
+    Handle the page-change case in the browser, not just in `getValidationMessages`.
+    To fix an already-saved screen, re-resolve the instance by descending typed:
+    `screen.Widgets` → layout instance → `PlaceholdersContent` → `IIfWidget.FalseBranch.Widgets`
+    → container → `IMobileBlockInstanceWidget`, then `EventHandlers`.
 - **`Tabs`** ships with 3 fixed header/content items. Adding more by API was not verified;
   a button bar with one If panel per tab works.
 - **Upload widget.** It contains a default `Image` placeholder that renders as a large grey
@@ -279,6 +290,23 @@ screen scaffold), [`model-api-tips.md`](model-api-tips.md) (naming gotchas),
 - **OSUI login screen:** `.login-screen` is the full-screen wrapper; the card is `form.login-form`.
   **Side menu:** `.app-menu-content` is already `position: fixed; top: 0; bottom: 0`, so don't add
   `min-height` to `.aside-navigation`. That wrapper spans the full width.
+- **Finding the host to test against.** The Service Studio MCP does not expose the
+  environment's host name. On macOS read `<HostName>` from
+  `~/Library/Application Support/OutSystems/ServiceStudio 11 XPlatform/Settings.xml`, then
+  open `https://<host>/<Module>/<Screen>` (verified 2026-10-14). This also works with the
+  built-in browser pane, not only `puppeteer-core`. Publish first (`omlPublish`); the browser
+  sees the live module only.
+- **Role-by-role checks with the built-in browser (verified 2026-10-14).** Many sample apps
+  have a "Sample Users" link on the Login screen that lists one user per role.
+  - Click it, then click a user; that signs in with no credentials typed.
+  - To switch user, open the side menu (hamburger, top left) and click the logout icon next to
+    the user name at the bottom, then repeat.
+  - An anonymous visit to a role-restricted screen redirects to `/<Module>/Login`.
+  - A signed-in user who lacks the role goes to `InvalidPermissions`; sample users usually all
+    hold some role, so that case may be untestable. Confirm the screen's `Roles` through a
+    throw-probe (`foreach (var r in scr.Roles) s += r.Name + ","`) and say so in the report.
+  - Read results with `javascript_tool` on `document.body.innerText` (for example a regex for
+    `\d+ to \d+ of \d+ items`) rather than screenshots; OSUI list text is in the DOM.
 - **Screenshot loop:** use `puppeteer-core` with the locally installed Chrome. Log in by clicking
   the Login button; pressing Enter doesn't submit the OSUI login form. Pass credentials through
   environment variables. The app scrolls inside a container rather than the window, so scroll that
