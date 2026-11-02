@@ -795,6 +795,10 @@ Quick checklist (each already covered in detail above):
   (including an entity-action name like `GetOrder` once entity `Order` has an
   identifier) is silently suffixed (`GetOrder2`), and attribute names are cut
   to 28 characters. Read `.Name` back ([`reference/patterns-by-element.md`](reference/patterns-by-element.md) § "Silent renames").
+- Saying a property doesn't exist because the name the user gave isn't in the
+  read output — users use Service Studio's display labels, the tools return
+  internal names (e.g. a REST API's "API Consumer" is `Interoperability`).
+  See [`reference/model-api-tips.md`](reference/model-api-tips.md) § "Service Studio property labels vs. model property names".
 - Making a Reactive screen public with `screen.AnonymousAccess = true` — `omlMerge` drops it.
   Add `eSpace.AnonymousRole` to `screen.Roles` instead, and check access on the **live** module after
   the merge ([`reference/patterns-by-element.md`](reference/patterns-by-element.md) § "Screen access").

@@ -8,6 +8,17 @@ The Model API sometimes uses different naming conventions than the Public OutSys
 * UI-related objects usually have "Mobile" in their interface names in the Model API, while in the Public OutSystems Documentation they are often referred to as "UI": e.g., screens are represented by `IMobileScreen` objects (from the `OutSystems.Model.UI.Mobile` namespace), UI widgets are represented by `IMobileWidget` objects (from the `OutSystems.Model.UI.Mobile.Widgets` namespace), UI flows are represented by `IMobileFlow` objects (from the `OutSystems.Model.UI.Mobile` namespace), etc.
 * App Settings are referred to as "SiteProperties" in the Model API and represented by `ISiteProperty` objects (from the `OutSystems.Model.Data` namespace).
 
+#### Service Studio property labels vs. model property names
+
+Users name properties the way Service Studio's Properties pane shows them. The read tools (`getIntegrations`, `getSerializedObject*`, `getDataModel`, …) return the model's internal property names and enum values, never the display label. When a property the user names isn't in the output, don't report that it doesn't exist: find the property whose meaning fits, say which one you matched, and confirm with the user.
+
+| Service Studio label | Where | Model property | Values (label → model) |
+|---|---|---|---|
+| API Consumer | Exposed REST API, Advanced | `IRestService.Interoperability` | ODC → `Yes`; External system or other → `No` |
+| API Producer | Consumed REST API, Advanced | `IRestClient.Interoperability` | ODC → `Yes`; External system or other → `No` |
+
+A property hidden in the Properties pane (e.g. API Consumer while the `ShowInteroperability` feature toggle is off) still shows up in the read output with its current value.
+
 #### Per-style namespace map (Reactive / Mobile vs. Traditional Web)
 
 The "Mobile" naming above applies to Reactive Web and Mobile modules. **Traditional Web modules use a parallel namespace tree under `OutSystems.Model.UI.Web`** with `Web`-prefixed interface names:
