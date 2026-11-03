@@ -1,0 +1,31 @@
+{
+  "action": "BootstrapOrders",
+  "timer": "BootstrapOrders",
+  "description": "Creates sample orders with lines when the Order table is still empty",
+  "guard": {"entity": "Order"},
+  "lookups": [{"aggregate": "GetProducts", "entity": "Product", "minRows": 5}],
+  "records": [
+    {"entity": "Order",
+     "set": {"OrderNumber": "\"SO-1001\"", "CustomerName": "\"Acme Corp\"", "OrderDate": "CurrDateTime()",
+             "Status": "\"Open\"", "TotalAmount": "GetProducts.List[0].Product.Price * 2 + GetProducts.List[1].Product.Price * 1"},
+     "children": [
+       {"entity": "OrderLine", "fk": "OrderId",
+        "set": {"ProductId": "GetProducts.List[0].Product.Id", "Quantity": "2",
+                "UnitPrice": "GetProducts.List[0].Product.Price", "LineTotal": "2 * GetProducts.List[0].Product.Price"}},
+       {"entity": "OrderLine", "fk": "OrderId",
+        "set": {"ProductId": "GetProducts.List[1].Product.Id", "Quantity": "1",
+                "UnitPrice": "GetProducts.List[1].Product.Price", "LineTotal": "1 * GetProducts.List[1].Product.Price"}}
+     ]},
+    {"entity": "Order",
+     "set": {"OrderNumber": "\"SO-1002\"", "CustomerName": "\"Globex Ltd\"", "OrderDate": "CurrDateTime()",
+             "Status": "\"Shipped\"", "TotalAmount": "GetProducts.List[2].Product.Price * 3 + GetProducts.List[3].Product.Price * 1"},
+     "children": [
+       {"entity": "OrderLine", "fk": "OrderId",
+        "set": {"ProductId": "GetProducts.List[2].Product.Id", "Quantity": "3",
+                "UnitPrice": "GetProducts.List[2].Product.Price", "LineTotal": "3 * GetProducts.List[2].Product.Price"}},
+       {"entity": "OrderLine", "fk": "OrderId",
+        "set": {"ProductId": "GetProducts.List[3].Product.Id", "Quantity": "1",
+                "UnitPrice": "GetProducts.List[3].Product.Price", "LineTotal": "1 * GetProducts.List[3].Product.Price"}}
+     ]}
+  ]
+}
