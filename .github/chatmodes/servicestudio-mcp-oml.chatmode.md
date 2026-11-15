@@ -27,6 +27,10 @@ module.
 3. **Every tool except `listApps` wraps its arguments in `input`:**
    `{ "input": { … }, "sessionToken": "<token>" }`. `listApps` is just
    `{ "sessionToken": "<token>" }`. There is no flat shape.
+   **Open an edit session** with `startOmlEditSession` (`input: { eSpaceName }`)
+   before any read or write (otherwise reads fail with `OML not found`), and
+   `endOmlEditSession` when done. `omlMerge` doesn't end it; to read the live
+   module, end the session and start a new one.
 4. **Summarise a module with one probe**
    (`servicestudio-mcp-oml/examples/ProbeModuleInventory.cs`), not one getter per element.
    The probe throws before saving, so it's a read: use it even when asked not to change anything.
@@ -134,7 +138,11 @@ a non-empty `mutatedOmlPath`, call `omlMerge` with that path:
 It opens Service Studio's interactive Compare-and-Merge window so the user
 reviews and accepts the diff. Skip only when the task was read-only, every call
 returned `mutatedOmlPath: ""`, or the user asked to discard the chain
-(`omlReset`, `input: { eSpaceName }`).
+(`endOmlEditSession` or `omlReset`, `input: { eSpaceName }`).
+
+- **Cancelled merge** (`merged: false`, "cancelled in the Compare and Merge window"):
+  ask the user why before re-applying. **Merge aborted by a client timeout**: don't
+  re-call it; ask the user, then verify from a fresh edit session.
 
 - **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `omlReset`, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: older Service Studio builds reject the whole merge. Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
 - **`omlRefreshReferences`** (`input: { eSpaceName }`, plus the token) refreshes all

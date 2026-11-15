@@ -120,6 +120,12 @@ Service Studio's Compare-and-Merge window and clears that module's pointer, so t
 re-snapshots the live module. The pointer is cleared when the window opens, not when the user
 accepts, so a chain does not continue past a merge.
 
+> **Update (observed 2026-11-15, Service Studio 11.55.97):** the chain now lives in an explicit
+> **OML edit session**. `startOmlEditSession` checks out a working copy; reads and applies fail with
+> `OML not found` without one, and there is no implicit snapshot. `omlMerge` no longer clears the
+> pointer: applies continue on the same working copy until `endOmlEditSession`. The advance rules
+> above still hold within a session. See `servicestudio-mcp-oml/SKILL.md` § 0 (step 4) and § 3.1.
+
 **Evidence:**
 - `servicestudio-mcp-oml/reference/mcp-session-pointer.md` — pointer advance rules, `omlReset`, `omlMerge`, and cross-module eviction.
 - `servicestudio-mcp-oml/SKILL.md` (§ 3 and § 3.1) — the agent-facing invocation shape (`code` + optional `imports`) and the auto-merge closing step.

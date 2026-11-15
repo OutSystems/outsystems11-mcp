@@ -1,5 +1,7 @@
 # 05 — Traditional Web read + mutate via MCP
 
+> **Contract update (observed 2026-11-15, Service Studio 11.55.97).** This transcript predates OML edit sessions. On current builds, call `startOmlEditSession` (`input: { eSpaceName }`) before the first read or apply: there is no implicit snapshot, and reads fail with `OML not found` without a session. `omlMerge` no longer clears the pointer or ends the session; call `endOmlEditSession` when done. Where this page says "the host snapshots the open module" or "merge clears the pointer", read it with that in mind. See [`../SKILL.md`](../SKILL.md) § 0 (step 4) and § 3.1.
+
 **Transport**: MCP (Service Studio in-process MCP Server).
 **Scenario**: Style-detect → enumerate Traditional screens → read one screen's structure → add a session variable + rename a screen, all in one `applyModelApiCode` lambda → surface back to Service Studio via the merge UI. The canonical walkthrough for a Claude Code agent that needs to mutate a Traditional Web module.
 

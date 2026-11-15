@@ -10,12 +10,15 @@ started it fails with `ConnectionRefused`. **Tool names are camelCase, with no
 Tools fall into three buckets:
 
 - **Native host tools** that act on the live Service Studio session directly:
-  `createSessionToken`, `listApps`, and the host-only `omlReset` / `omlMerge` /
-  `omlRefreshReferences` / `omlPublish`.
+  `createSessionToken`, `listApps`, `startOmlEditSession` / `endOmlEditSession`,
+  and the host-only `omlReset` / `omlMerge` / `omlRefreshReferences` / `omlPublish`.
 - **Sidecar-backed read tools** — `getDataModel`, `getScreen`, `runQuery`,
-  `getValidationMessages`, … Each one snapshots the open module to
-  `%TEMP%\ServiceStudio.MCPServer\<runId>-in.oml`, runs the bundled sidecar, and returns
-  the result. One child process per call.
+  `getValidationMessages`, … Each one runs the bundled sidecar against the edit
+  session's working copy (`%TEMP%\ServiceStudio.MCPServer\<runId>-in.oml`) and returns
+  the result. One child process per call. **Open an edit session first**: on Service
+  Studio 11.55.97 the code-returning reads fail with `OML not found: …-in.oml` when
+  no session is open (`listApps` and `getValidationMessages` still answer; verified
+  2026-11-15).
 - **The write tool** `applyModelApiCode`, which works the same way but also
   injects the save and advances the session pointer on success.
 
@@ -266,6 +269,8 @@ namespaces define an `IExternalSite`).
 |---|---|---|
 | `createSessionToken` | `clientName?` (top level, no `input`) | the token string — call once per agent session (see "Session token" above) |
 | `listApps` | only `sessionToken` | `{ apps: [{ key, name, kind:"eSpace", version, isOpen, isReference, moduleType }] }` — open module + loaded references. `moduleType` (formerly `style`) ∈ `Reactive`, `Mobile`, `Traditional`, `ReactiveLibrary`, `MobileLibrary`, `TraditionalLibrary`, `Service`, `Unknown` (see [`../SKILL.md`](../SKILL.md) § 4.1) |
+| `startOmlEditSession` | `eSpaceName:string` | `{ started:true }` — checks out a working copy of the live module. Required before `applyModelApiCode` and the code-returning reads. Fails if a session is already open on that module (end it first). Verified 2026-11-15 on Service Studio 11.55.97 |
+| `endOmlEditSession` | `eSpaceName:string` | `{ ended:true, discardedChanges:bool }` — discards the working copy and any unmerged edits; the only way to end a session (`omlMerge` never does). `discardedChanges:true` right after a successful merge is normal: what was merged stays in the live module. To read the live module again, end the session and start a new one (see [`../SKILL.md`](../SKILL.md) § 0, step 4) |
 
 > **`searchModel` was removed** from the MCP host (no cross-element substring
 > search tool exists anymore). Find elements by name via the matching
@@ -279,7 +284,7 @@ namespaces define an `IExternalSite`).
 | `omlReset` | `eSpaceName:string` | `{ discardedChanges:bool, eSpaceName:string }` — throws away that module's unmerged chain; `discardedChanges:false` means there was none and nothing was done (not a failure). The discarded OML is **not deleted**, so an accidental reset is undone by passing the last apply's `mutatedOmlPath` to `omlMerge` (until the next Studio startup clears the temp folder). `MODULE_NOT_LOADED` if the module isn't open (see [`mcp-session-pointer.md`](mcp-session-pointer.md)) |
 | `omlRefreshReferences` | `eSpaceName:string` (send `sessionToken` too, although the schema omits it) | `{ message, hasErrors:bool, hasWarnings:bool }` — refreshes every reference of the **live** module to its latest version (Manage Dependencies → Refresh All); does not add new dependencies. **Drops the session pointer** — an unmerged chain vanishes from reads (its `-out.oml` stays on disk). Verified 2026-09-30 |
 | `omlPublish` | `eSpaceName:string` (send `sessionToken` too, although the schema omits it) | 1-Click Publish of the live module, waits for the result → `{ published:bool, status:"success"|…, reason:string, messages:["Uploading","Compiling","Deploying","Done"] }` (verified 2026-10-03, 16 s for a small module). The module must be open in Service Studio, otherwise it fails with "Module 'X' is not open in Service Studio". Needs the user's "allow automatic merge and publish" permission in the MCP Server dialog; while it is withheld it returns at once with `{ published:false, status:"blocked", reason:"Publishing requires a write permission the user has not granted. …", messages:[] }` and publishes nothing (verified 2026-10-03). **Only on explicit user request.** |
-| `omlMerge` | `eSpaceName:string`, `mutatedOmlPath:string` | `{ merged:bool, message:string }` — merges the supplied OML into the named module and blocks until that resolves, then **clears that module's session pointer** so the next call re-snapshots the live module. Always check `merged` to verify the merge completed; on `true` the change is already in the module, so don't re-call with the same path (a successful merge deletes it, so a repeat fails with file-not-found regardless of whether the first call worked). Pass the `mutatedOmlPath` returned by the last successful `applyModelApiCode`; it's the default closing step (see [`mcp-session-pointer.md`](mcp-session-pointer.md)) |
+| `omlMerge` | `eSpaceName:string`, `mutatedOmlPath:string` | `{ merged:bool, message:string }` — merges the supplied OML into the named module and blocks until that resolves. It does **not** end the edit session or reset the working copy: later applies keep building on it, including after a cancelled merge (verified 2026-11-15; older builds cleared the pointer here). The call can outlast a client's tool timeout while the Compare-and-Merge window is open; if it aborts, don't re-call it: ask the user, then verify from a fresh session (see [`../SKILL.md`](../SKILL.md) § 3.1). Always check `merged` to verify the merge completed; on `true` the change is already in the module, so don't re-call with the same path (a successful merge deletes it, so a repeat fails with file-not-found regardless of whether the first call worked). Pass the `mutatedOmlPath` returned by the last successful `applyModelApiCode`; it's the default closing step (see [`mcp-session-pointer.md`](mcp-session-pointer.md)) |
 
 > **The merge mode is the user's, not yours.** Whether `omlMerge` opens the
 > Compare-and-Merge window for the user to review or accepts the changes with no
@@ -293,6 +298,8 @@ namespaces define an `IExternalSite`).
 When responding to a "modify the OML to do X" request:
 
 0. **Once per session:** `createSessionToken`, then send every call as `{ "input": {…}, "sessionToken": … }`.
+   Then `startOmlEditSession` on the module before any read or write, and
+   `endOmlEditSession` when you are done with it.
 1. **Read the existing state** with the matching read tool (`getDataModel`,
    `getScreen`, …). Output is C# in the dialect you'll emit. Pass the required
    args (`includeJson:"Never"`, `objectName` for single-element reads).

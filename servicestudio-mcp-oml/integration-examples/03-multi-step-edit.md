@@ -1,5 +1,7 @@
 # 03 — Multi-step edit (auto-chain via the session pointer)
 
+> **Contract update (observed 2026-11-15, Service Studio 11.55.97).** This transcript predates OML edit sessions. On current builds, call `startOmlEditSession` (`input: { eSpaceName }`) before the first read or apply: there is no implicit snapshot, and reads fail with `OML not found` without a session. `omlMerge` no longer clears the pointer or ends the session; call `endOmlEditSession` when done. Where this page says "the host snapshots the open module" or "merge clears the pointer", read it with that in mind. See [`../SKILL.md`](../SKILL.md) § 0 (step 4) and § 3.1.
+
 **Transport**: MCP (Service Studio in-process MCP Server).
 **Scenario**: User asks for two related mutations — add a `Customer` entity, *then* add an `Email` attribute to it. The key teaching point: **the MCP host auto-chains successive `applyModelApiCode` calls via its per-module session pointer**. Each successful call writes a new out file and advances the pointer to it; the next call observes the pointer and reuses it as its input — invisibly to the agent, which never sees the path.
 

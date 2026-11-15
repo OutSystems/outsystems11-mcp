@@ -167,6 +167,9 @@ scenario_3:
       - point: "`listApps` takes only the token, no `input`"
         description: "The `listApps` call is `{ \"sessionToken\": \"<token>\" }` with no `input` wrapper, and the style is read from each row's `moduleType` field (e.g. `\"Reactive\"`). Reading a `style` field is the WRONG answer."
 
+      - point: "Opens an edit session before reading, and ends it after merging"
+        description: "Before `getDataModel`, the sequence calls `startOmlEditSession` with `{ \"input\": { \"eSpaceName\": \"MyModule\" }, \"sessionToken\": … }`, and it closes with `endOmlEditSession` after `omlMerge`. Reading or applying without an open session is the WRONG answer (the read fails with `OML not found`). Ending the session before the merge, or assuming `omlMerge` ends it, is also wrong."
+
       - point: "Every other tool wraps its arguments in `input`"
         description: "`getDataModel` is `{ \"input\": { \"eSpaceName\": \"MyModule\", \"includeJson\": \"Never\" }, \"sessionToken\": … }` and `applyModelApiCode` is `{ \"input\": { \"eSpaceName\": \"MyModule\", \"code\": \"eSpace => { … }\", \"imports\": [...] }, \"sessionToken\": … }` with all three `input` fields present. Flat arguments (e.g. `{ \"code\": …, \"imports\": … }` or `{ \"includeJson\": \"Never\" }`) are the WRONG answer."
 

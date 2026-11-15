@@ -6,7 +6,7 @@ description: >-
   the open `.oml` module via the `applyModelApiCode` MCP tool. Covers the
   full-lambda contract, the Model API surface (entities, attributes, screens,
   server / client actions, structures, roles), the sandbox,
-  the per-module session pointer that auto-chains edits, the camelCase tool
+  the OML edit session (`startOmlEditSession` / `endOmlEditSession`), the camelCase tool
   catalogue (`getDataModel`, `getScreen`, `runQuery`, `getValidationMessages`,
   `listApps`, …), the session token + `input` envelope, and the host-only
   `omlReset` / `omlMerge` / `omlRefreshReferences` / `omlPublish`
@@ -103,6 +103,36 @@ differs from ODC's published examples in one important way (see § 1).
 ```
 
 Full per-tool shapes: [`reference/verb-reference.md`](reference/verb-reference.md).
+
+4. **Open an OML edit session before reading or writing the module.** Call
+   `startOmlEditSession` with `{ "input": { "eSpaceName": … }, "sessionToken": … }`
+   → `{ "started": true }`. It checks out a working copy of the live module, and
+   every `applyModelApiCode` call and most `get*` reads work against that copy.
+
+   Without a session, the code-returning reads fail with
+   `[-32000] OML not found: …\ServiceStudio.MCPServer\<runId>-in.oml`. Verified
+   2026-11-15 on Service Studio 11.55.97 with `getDataModel`, `getScreenNames`, `getActionNames`, `getStructures`,
+   `getRoleNames`, `getWebBlockNames`, `getIntegrations` and `getTimers`. `listApps` and
+   `getValidationMessages` still answered without a session. Treat that error as
+   "no edit session", not as a broken module.
+
+   Lifecycle:
+
+   ```
+   startOmlEditSession → applyModelApiCode … (any number) → omlMerge (any number) → endOmlEditSession
+   ```
+
+   - `startOmlEditSession` fails if a session is already open on that module. Call
+     `endOmlEditSession` first if you need a fresh one.
+   - `omlMerge` does **not** end the session. Later applies keep building on the
+     same working copy (§ 3.1).
+   - `endOmlEditSession` → `{ "ended": true, "discardedChanges": <bool> }` discards
+     the working copy and any unmerged edits. Call it when you are done with the
+     module, including after a read-only probe. `discardedChanges: true` right after
+     a successful `omlMerge` is normal (observed 2026-11-15); what was merged stays
+     in the live module.
+   - **To read the live module** (for example to confirm a merge), end the session
+     and start a new one. A still-open session keeps showing its own working copy.
 
 ## 1. The full-lambda contract — read this first
 
@@ -214,7 +244,7 @@ pattern-match against it.
 **To get oriented, or to answer a read-only question about the whole module, run the
 inventory probe first:** [`examples/ProbeModuleInventory.cs`](examples/ProbeModuleInventory.cs).
 One throw-probe returns entities with attribute types, structures, screens per flow with
-their roles, server actions with folders, client actions, roles, integrations and
+their roles, blocks per flow, server actions with folders, client actions, roles, integrations and
 references, plus the module's TrueChange messages. Verified 2026-10-17: a 17-entity,
 15-screen module came back as ~5.6k characters, where `getDataModel` alone was ~113k and
 too large to return inline. Then drill in with the `get*` tools only where the question
@@ -246,9 +276,11 @@ or the edit needs detail. A module summary built from one getter per element too
 | `getValidationMessages` | TrueChange validation messages against the current pointer's OML; optional `filter` of `info` / `warning` / `error` |
 | `listApps` | The open module + its loaded references, each with `moduleType` (see § 4.1) |
 
-Read tools auto-snapshot the live module on the first call and subsequently
-follow the session pointer, so they always see the state of the last successful
-mutation (see [`reference/mcp-session-pointer.md`](reference/mcp-session-pointer.md)).
+Read tools need an open edit session (§ 0, step 4). Inside a session they read
+the working copy, so they see the state of the last successful
+`applyModelApiCode` in that session (see [`reference/mcp-session-pointer.md`](reference/mcp-session-pointer.md)).
+They do **not** auto-snapshot the live module any more: without a session they fail
+with `OML not found`.
 Full catalogue with input shapes: [`reference/verb-reference.md`](reference/verb-reference.md).
 
 > **`includeJson` is a required argument on the code-returning read tools**
@@ -454,18 +486,46 @@ resolves. Depending on the user's setting, it either opens the Compare-and-Merge
 window for them to review — which may take minutes — or accepts the changes with
 no dialog and returns right away.
 
-**Once resolved, it also clears that module's session pointer**, so the next
-tool call re-snapshots the live module — which by then holds whatever the user
-accepted. No follow-up `omlReset` is needed to get back in sync, but the chain
-does *not* continue past a merge: a later `applyModelApiCode` starts a new
-chain off the live module. Merge once at the end rather than merging
-intermediate states.
+**A merge does not end the edit session or reset the working copy** (§ 0, step 4).
+You can merge any number of times and keep applying afterwards. Each later apply
+builds on the session's working copy, not on whatever the user accepted. Two
+consequences, both observed 2026-11-15:
 
-The pointer is dropped once the merge resolves — so a rejected or closed merge
-also leaves the agent on the live module. Nothing is lost when the merge
-doesn't succeed (the OML stays on disk at the `mutatedOmlPath` you passed),
-but **keep that path** in case the user wants to bring the work back. See
-[`reference/mcp-session-pointer.md`](reference/mcp-session-pointer.md).
+- **A cancelled merge leaves the rejected edit in the working copy.** The next
+  apply stacks on top of it. If the user cancelled because they disagree with the
+  change, either undo it explicitly in the next lambda, or `endOmlEditSession` and
+  start a new session so you work from the live module again.
+- **To confirm what actually landed**, end the session and start a new one, then
+  probe. Reads inside the old session show the working copy, not the live module.
+
+Nothing is lost when a merge doesn't succeed (the OML stays on disk at the
+`mutatedOmlPath` you passed), but **keep that path** in case the user wants the
+work back. See [`reference/mcp-session-pointer.md`](reference/mcp-session-pointer.md).
+
+> **`merged: false` with "The merge was cancelled in the Compare and Merge window."**
+> The user pressed Cancel. That is a decision, not a technical failure: **do not
+> re-merge the same file, and don't re-apply a variant without asking why.** In
+> testing (2026-11-15), two cancelled merges in a row meant the user disagreed with
+> the *content*: first a fix that silenced a warning but broke runtime behaviour,
+> then a colour the agent had picked on its own. Ask what they want changed, then
+> apply and merge again.
+
+> **`omlMerge` can outlive the client's tool timeout.** The call blocks while the
+> Compare-and-Merge window is open. Claude Code aborts an MCP call after 300 s of
+> silence (`sent no response or progress for 300s; aborting`), so a user who reviews
+> slowly leaves you with **no result**. The merge may still complete in Service
+> Studio afterwards (observed 2026-11-15: aborted at 300 s, and the user accepted it
+> later). Then:
+> 1. **Don't re-call `omlMerge`.** If the first merge went through, the file is gone
+>    and a repeat tells you nothing.
+> 2. Ask the user whether the window is still open and what they chose.
+> 3. Verify on the live module: `endOmlEditSession`, `startOmlEditSession`, then a
+>    throw-probe that prints the values you changed.
+>
+> To avoid the abort, the user can raise the per-server `timeout` (ms) for the
+> `servicestudio` MCP server in their MCP settings, or set
+> `CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT`. Before a merge, tell the user to look for the
+> Compare-and-Merge window.
 
 > **After an automatic merge, an open flow canvas does not redraw** (verified
 > 2026-10-17). The model is updated — the properties panel and expression editor show
@@ -541,7 +601,7 @@ stderr) does **not** position hand-wired nodes. Full mechanics: [`reference/mode
 
 - The task was read-only — no `applyModelApiCode` fired, so there is no
   `mutatedOmlPath`.
-- The user asked you to discard the chain — call `omlReset` instead.
+- The user asked you to discard the chain — call `endOmlEditSession` (or `omlReset`) instead.
 - Every `applyModelApiCode` call returned `mutatedOmlPath: ""` (compile error,
   runtime exception, nothing saved) — there is nothing to merge.
 
@@ -824,6 +884,44 @@ Quick checklist (each already covered in detail above):
 - Retrying `omlMerge` after `merged:false` without asking what Service Studio's
   dialog said, or setting `Theme.IconLibrary`, which makes older Service Studio
   builds reject the merge (§ 3.1).
+- Calling a read tool or `applyModelApiCode` before `startOmlEditSession`, then
+  treating `OML not found: …-in.oml` as a broken module (§ 0, step 4). Forgetting
+  `endOmlEditSession` when you are done, or reading inside an old session to confirm
+  a merge. That shows the working copy, not the live module.
+- Re-calling `omlMerge`, or re-applying a variant, after a merge timed out or was
+  cancelled, without asking the user first (§ 3.1).
+- **Silencing a type warning without keeping the value valid.** A parameter of type
+  `<StaticEntity> Identifier` (e.g. OutSystemsUI `Color Identifier`) must receive a
+  record of that static entity: `Entities.Color.Red`. Wrapping a Text expression in
+  `TextToIdentifier(...)` makes TrueChange quiet, but the value is not a record. A
+  developer reported that the block then rendered with an empty colour (2026-11-15;
+  field report, not re-measured by the agent). The same goes for
+  `Entities.Color.Blue + "-lightest"`, which is Text. If no record fits what the user
+  wants (OSUI `Color` has no `…Lightest` shades), stop and ask. Don't invent a
+  conversion. List the valid records with
+  `((OutSystems.Model.Types.IIdentifierType)param.DataType).Entity`, cast to
+  `OutSystems.Model.Data.IStaticEntitySignature`, then `.Records.Select(r => r.Identifier)`.
+  `IReference` has no `.Elements`, so don't look the entity up through the reference.
+- **Mixing up style property names across widget types** (verified 2026-11-15):
+  - `ServiceStudio.Plugin.NRWidgets.IExpression`: `Style` / `SetStyle("\"…\"")`
+    (no `StyleClasses`).
+  - `OutSystems.Model.UI.Mobile.Widgets.ITextWidget`: `StyleClasses` /
+    `SetStyleClasses("\"…\"")`.
+  - `ServiceStudio.Plugin.NRWidgets.IContainer` has no `StyleClasses`.
+  - `IMobileWidget` and `IMobileBlockInstanceWidget` live in
+    `OutSystems.Model.UI.Mobile.Widgets`, not `OutSystems.Model.UI.Mobile`.
+  - Block inputs: `inst.Arguments.First(a => a.Parameter.Name == "X").SetValue("expr")`.
+- **Changing a block's colour/class input without checking its placeholder content.**
+  Widgets inside a block instance's placeholders can carry their own classes, and
+  those override the block input. Example: an OSUI `Counter`'s number had
+  `heading2 text-blue-darker`, so changing `ExtendedClass` recoloured only the
+  label. Before restyling a block instance, list its descendants
+  (`inst.GetAllDescendantsOfType<…>()`) with their `Style` / `StyleClasses`, and strip
+  or adjust the inner colour classes too.
+- **Choosing visual values (colours, classes, sizes) yourself when the request is
+  ambiguous.** Offer two to four concrete options first (e.g. with `AskUserQuestion`),
+  and only then apply and merge. A screenshot of the published app is the
+  real check; TrueChange cannot judge contrast.
 - Using an ambiguous short name. `IStartNode`, `IEndNode`, `IScreenAction`,
   `IScreenAggregate` and `IDataAction` each exist in more than one imported
   namespace. Write them in full:

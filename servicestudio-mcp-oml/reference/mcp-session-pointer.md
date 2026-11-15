@@ -1,5 +1,14 @@
 # MCP session pointer, `omlReset`, and `omlMerge`
 
+> **⚠️ Superseded in part by OML edit sessions (observed 2026-11-15).** The current host
+> requires `startOmlEditSession` before reads and applies. Without it, the code-returning
+> `get*` tools fail with `OML not found: …-in.oml`. There is no implicit snapshot of the
+> live module. `omlMerge` no longer drops the pointer or ends the session: later applies
+> continue on the same working copy until `endOmlEditSession`. Where this page says "the
+> first call snapshots the live module" or "merge clears the pointer", follow SKILL.md
+> § 0 (step 4) and § 3.1 instead. The advance rules below (a clean save advances, a
+> failure or throw-probe doesn't) still hold within a session.
+
 Service Studio's in-process MCP host keeps a **per-module session pointer** at
 the path of the last successful `applyModelApiCode` save. Successive tool calls
 observe that pointer and reuse it as their input — so a chain of edits flows
