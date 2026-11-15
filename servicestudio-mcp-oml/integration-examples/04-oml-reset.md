@@ -1,5 +1,7 @@
 # 04 — `omlReset` drop-and-restart walkthrough
 
+> **Contract update (observed 2026-11-15, Service Studio 11.55.97).** This transcript predates OML edit sessions. On current builds, call `startOmlEditSession` (`input: { eSpaceName }`) before the first read or apply: there is no implicit snapshot, and reads fail with `OML not found` without a session. `omlMerge` no longer clears the pointer or ends the session; call `endOmlEditSession` when done. Where this page says "the host snapshots the open module" or "merge clears the pointer", read it with that in mind. See [`../SKILL.md`](../SKILL.md) § 0 (step 4) and § 3.1.
+
 **Transport**: MCP (Service Studio in-process MCP Server).
 **Scenario**: The agent has built a two-step mutation chain. The user changes direction mid-task and wants the agent to start over from the live module instead of layering more mutations onto the existing chain. The agent calls `omlReset`, then resumes work — the first call after the reset re-snapshots the live module. Part 2 shows the same tool fired *by mistake*, and how the discarded work comes back.
 

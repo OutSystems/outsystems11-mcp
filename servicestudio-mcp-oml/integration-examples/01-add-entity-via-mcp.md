@@ -1,5 +1,7 @@
 # 01 — Add a `Customer` entity via MCP
 
+> **Contract update (observed 2026-11-15, Service Studio 11.55.97).** This transcript predates OML edit sessions. On current builds, call `startOmlEditSession` (`input: { eSpaceName }`) before the first read or apply: there is no implicit snapshot, and reads fail with `OML not found` without a session. `omlMerge` no longer clears the pointer or ends the session; call `endOmlEditSession` when done. Where this page says "the host snapshots the open module" or "merge clears the pointer", read it with that in mind. See [`../SKILL.md`](../SKILL.md) § 0 (step 4) and § 3.1.
+
 **Transport**: MCP (Service Studio in-process MCP Server at `http://127.0.0.1:41820/mcp`).
 **Scenario**: Add a `Customer` entity to the module open in Service Studio with a single `Name` text attribute (200 chars), invoked through the MCP tools. This is the **canonical path** for a Claude Code agent talking to a live Service Studio session — one MCP tool call per logical step, with the host taking care of snapshotting the open module, allocating the output path, spawning the bundled sidecar per call, and chaining successive calls through its session pointer. You supply a **full `eSpace => { ... }` lambda** in `code`; the host appends `eSpace.Save(...)` for you.
 

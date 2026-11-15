@@ -17,6 +17,8 @@ Do this for the request below:
 0. **Session.** If you don't already hold one, call `createSessionToken` once
    and pass the token as top-level `sessionToken` on every call. Every tool
    except `listApps` takes `{ "input": { … }, "sessionToken": "<token>" }`.
+   Then call `startOmlEditSession` with `input: { eSpaceName }`; reads and writes
+   need it.
 1. **Read first.** Call `getDataModel` (and any relevant `get*` read tool, e.g.
    `getServerAction`, `getScreen` with `objectName`) with
    `input: { eSpaceName, includeJson: "Never" }` and pattern-match the output
@@ -39,8 +41,8 @@ Do this for the request below:
    error is an MCP tool error carrying diagnostics, not silence) — bisect with
    one risky member per call.
 4. **Finalise.** Call `omlMerge` with
-   `input: { eSpaceName, mutatedOmlPath: "<final path>" }`. Don't call
-   `omlPublish` unless the user asked to publish.
+   `input: { eSpaceName, mutatedOmlPath: "<final path>" }`, then
+   `endOmlEditSession`. Don't call `omlPublish` unless the user asked to publish.
 
 The change to make:
 
