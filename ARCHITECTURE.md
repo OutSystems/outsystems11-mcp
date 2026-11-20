@@ -57,7 +57,7 @@ directs the **agent** to interact with, and the systems the MCP server engages d
 | External Service | Communication Type | Purpose |
 | --- | --- | --- |
 | Coding Agent (Claude Code, GitHub Copilot, Antigravity, Kiro, Codex CLI, Cursor) | Sync (context load) | Consumes SKILL.md + references, plus the harness adapter it recognizes (if any); emits Model API lambdas and MCP tool calls |
-| Service Studio in-process MCP Server (`127.0.0.1:41820/mcp`) | Sync (HTTP, MCP tool calls) | Exposes `applyModelApiCode`, the `get*` reads, `runQuery`, `listApps`, `getValidationMessages`, and host-only `omlReset` / `omlMerge` |
+| Service Studio in-process MCP Server (`127.0.0.1:41820/mcp`) | Sync (HTTP, MCP tool calls) | Exposes `applyModelApiCode`, the `get*` reads, `runQuery`, `listOpenModules`, `searchApps`, `getValidationMessages`, `openModule` / `closeModule`, and host-only `omlReset` / `omlMerge` |
 | Bundled Model API sidecar | Sync (stdio JSON-RPC, out of scope) | Runs the C# `eSpace => {...}` lambda against a snapshot using the OutSystems Model API; implementation not in this repo |
 | Open `.oml` module + `%TEMP%\ServiceStudio.MCPServer\` snapshots | Sync (file I/O, host-managed) | Input snapshot (`<runId>-in.oml`) and mutated output (`<runId>-out.oml`); surfaced to the user via the Compare-and-Merge window |
 
@@ -114,11 +114,11 @@ that does not compile never runs at all and comes back as an MCP tool error, not
 The host keeps a per-module **session pointer** at the last successful save and auto-chains
 successive edits through it — the agent never names input or output paths. The pointer advances only
 when the out file was written and `exceptionMessage` is empty; failed calls leave it untouched, so
-retries resume from the last good state (no `omlReset` needed for error recovery). The closing step
-of any mutating task is `omlMerge` with the returned `mutatedOmlPath`, which surfaces the diff into
-Service Studio's Compare-and-Merge window and clears that module's pointer, so the next call
-re-snapshots the live module. The pointer is cleared when the window opens, not when the user
-accepts, so a chain does not continue past a merge.
+retries resume from the last good state (no `omlReset` needed for error recovery). Writes run inside
+an edit session: `startOmlEditSession` checks out a working copy, which is the pointer until
+`endOmlEditSession` deletes it. The closing steps of any mutating task are `omlMerge` with the
+returned `mutatedOmlPath`, which surfaces the diff into Service Studio's Compare-and-Merge window,
+then `endOmlEditSession`. A merge doesn't end the session, so a chain can continue past one.
 
 **Evidence:**
 - `servicestudio-mcp-oml/reference/mcp-session-pointer.md` — pointer advance rules, `omlReset`, `omlMerge`, and cross-module eviction.

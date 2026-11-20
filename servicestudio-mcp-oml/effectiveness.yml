@@ -48,6 +48,13 @@
 #     MainContent (scenario_22), local insertion that keeps an existing
 #     flow's layout (scenario_23), and a whole-module summary from one
 #     inventory probe (scenario_24).
+#   - scenarios 25-27 cover choosing the module: finding, opening and
+#     closing one the user names that isn't open (scenario_25),
+#     resolving MODULE_AMBIGUOUS by tabId instead of guessing (scenario_26),
+#     and carrying the environment the user picked from searchApps into
+#     openModule when Studio is logged in to several (scenario_27).
+#     They were written from the Service Studio MCP server source, not yet
+#     verified live.
 
 test_type: "effectiveness"
 name: "servicestudio-mcp-oml effectiveness"
@@ -152,7 +159,7 @@ scenario_3:
   validation:
     prerequisites:
       - point: "Names the MCP tools"
-        description: "The sequence uses `listApps`, `getDataModel`, `applyModelApiCode` and `omlMerge` (in some sensible order), not UI clicks or REST endpoints."
+        description: "The sequence uses `listOpenModules` (or `listApps`, its name on older builds), `getDataModel`, `applyModelApiCode` and `omlMerge` (in some sensible order), not UI clicks or REST endpoints."
 
       - point: "Shows JSON arguments per call"
         description: "Each call is shown with a concrete JSON arguments object."
@@ -164,14 +171,17 @@ scenario_3:
       - point: "Passes `sessionToken` as a top-level argument"
         description: "Every later call carries `\"sessionToken\": \"<token>\"` as a top-level argument, a sibling of `input` — not nested inside `input`, and not omitted."
 
-      - point: "`listApps` takes only the token, no `input`"
-        description: "The `listApps` call is `{ \"sessionToken\": \"<token>\" }` with no `input` wrapper, and the style is read from each row's `moduleType` field (e.g. `\"Reactive\"`). Reading a `style` field is the WRONG answer."
+      - point: "`listOpenModules` takes only the token, no `input`"
+        description: "The `listOpenModules` call (`listApps` on older builds) is `{ \"sessionToken\": \"<token>\" }` with no `input` wrapper, and the style is read from each row's `moduleType` field (e.g. `\"Reactive\"`). Reading a `style` field is the WRONG answer."
 
       - point: "Every other tool wraps its arguments in `input`"
         description: "`getDataModel` is `{ \"input\": { \"eSpaceName\": \"MyModule\", \"includeJson\": \"Never\" }, \"sessionToken\": … }` and `applyModelApiCode` is `{ \"input\": { \"eSpaceName\": \"MyModule\", \"code\": \"eSpace => { … }\", \"imports\": [...] }, \"sessionToken\": … }` with all three `input` fields present. Flat arguments (e.g. `{ \"code\": …, \"imports\": … }` or `{ \"includeJson\": \"Never\" }`) are the WRONG answer."
 
       - point: "`omlMerge` puts both `eSpaceName` and `mutatedOmlPath` inside `input`"
         description: "The merge call is `{ \"input\": { \"eSpaceName\": \"MyModule\", \"mutatedOmlPath\": \"<path from the apply response>\" }, \"sessionToken\": … }`. Sending `mutatedOmlPath` flat, or omitting `eSpaceName`, is the WRONG answer."
+
+      - point: "Wraps the apply in an edit session"
+        description: "It calls `startOmlEditSession` with `{ \"input\": { \"eSpaceName\": \"MyModule\" }, \"sessionToken\": … }` before `applyModelApiCode`, and `endOmlEditSession` the same way after `omlMerge` returns `merged: true`. Calling `applyModelApiCode` with no session started, or leaving the session open at the end, is the WRONG answer."
 
       - point: "Does not call `omlPublish`"
         description: "The sequence ends at `omlMerge`; it does NOT call `omlPublish`, because the user did not ask to publish."
@@ -263,7 +273,7 @@ scenario_6:
     files: []
 
   prompt: |
-    The open OML module is a **Traditional Web** app (its `listApps`
+    The open OML module is a **Traditional Web** app (its `listOpenModules`
     `moduleType` is `"Traditional"`). It has a web flow named `PlansFlow`, a
     server entity `Post` (with a `Content` text attribute), and an
     existing screen named `Dashboard`. Using the in-process MCP Server,
@@ -578,7 +588,7 @@ scenario_13:
   prompt: |
     I'm driving the open module through the in-process MCP Server. Every
     single tool call I make — `getDataModel`, `applyModelApiCode`,
-    `listApps`, all of them — comes back with exactly
+    `listOpenModules`, all of them — comes back with exactly
     `An error occurred invoking '<toolName>'`. I noticed my client is
     sending extra argument fields I never wrote, with names like
     `inputPropertyNameValPairs`. What's wrong and what should I do? If I
@@ -604,7 +614,7 @@ scenario_13:
         description: "The answer states the `Accept` header must list BOTH `application/json` and `text/event-stream`, and/or that omitting either yields HTTP 406. Naming only one of the two content types is incomplete."
 
       - point: "Obtains a `sessionToken` once via `createSessionToken` and passes it on every call"
-        description: "The answer says the session is carried by a token from the `createSessionToken` tool (called once; the user approves it in Service Studio), passed as the top-level `sessionToken` argument on every later `tools/call`, with each tool's own arguments (except `listApps`) wrapped in `input`. It must NOT rely on an `Mcp-Session-Id` response header from `initialize` — the in-process server returns none."
+        description: "The answer says the session is carried by a token from the `createSessionToken` tool (called once; the user approves it in Service Studio), passed as the top-level `sessionToken` argument on every later `tools/call`, with each tool's own arguments (except `listOpenModules`) wrapped in `input`. It must NOT rely on an `Mcp-Session-Id` response header from `initialize` — the in-process server returns none."
 
       - point: "Persists the token across processes, outside the repo"
         description: "If the answer proposes one-shot scripts / `curl` invocations, it says the token must be written to a file and re-read per invocation — because each process starts fresh and an in-memory token would be lost, forcing a new `createSessionToken` (and approval dialog) on every call. It should place that file outside the user's repository (OS temp dir), NOT at a repo-relative path, since the token is an authorization credential that no `.gitignore` rule covers. An answer that only says 'cache it in memory' without addressing process boundaries is incomplete."
@@ -731,7 +741,7 @@ scenario_16:
         description: "The code REMOVES `eSpace.RegisteredRole` — and the `Clerk` role — from `approvals.Roles`, leaving `Manager`, because screens carry `Registered` plus every application role by default. Merely adding `Manager` (or checking it is present) leaves every logged-in user with access and is the WRONG answer."
 
       - point: "Verifies on the live module after merging"
-        description: "The confirmation step re-reads the screens' roles AFTER omlMerge (the pointer is cleared, so the read shows what Service Studio kept) — not only the pre-merge copy or a clean response. A public screen should read Anonymous (usually with Registered); Approvals should read Manager only."
+        description: "The confirmation step ends the edit session after omlMerge and THEN re-reads the screens' roles, so the read shows what Service Studio kept. Inside the session, reads still show the working copy, so a read taken before ending it, the pre-merge copy, or a clean response alone does NOT count. A public screen should read Anonymous (usually with Registered); Approvals should read Manager only."
 
       - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
         description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
@@ -741,6 +751,7 @@ scenario_17:
 
   read_references:
     - reference/patterns-by-element.md
+    - reference/logic-and-integrations.md
 
   codebase:
     files: []
@@ -771,7 +782,7 @@ scenario_17:
         description: "For `Recalculate` the code creates both nodes itself (e.g. `CreateNode<IStartNode>()` / `CreateNode<IEndNode>()`) and wires Start → End, because server, client and screen actions ship with NO nodes. Assuming the server action already has a Start/End is the WRONG answer."
 
       - point: "Positions nodes explicitly"
-        description: "The code gives the hand-created nodes distinct positions (or the response says layout must be done by hand) — it does NOT rely on the host's `Action Flow auto arrange completed` log line, which leaves hand-wired nodes stacked at one coordinate."
+        description: "The code gives the hand-created nodes distinct positions — with the `Connected*` helpers (e.g. `ConnectedBelow`, which wire and position in one step), `Below` / `ToTheRightOf`, or explicit coordinates — or the response says layout must be done by hand. It does NOT rely on the host's `Action Flow auto arrange completed` log line, which leaves hand-wired nodes stacked at one coordinate."
 
       - point: "Full lambda — `eSpace => { ... }`, no `eSpace.Save(...)`"
         description: "The `code` is a complete `eSpace => { ... }` lambda (begins with `eSpace =>`, ends in `}`) and does NOT call `eSpace.Save(...)`."
@@ -815,6 +826,9 @@ scenario_18:
 
 scenario_19:
   name: "o11_bpt_process_creation"
+
+  read_references:
+    - reference/logic-and-integrations.md
 
   codebase:
     files: []
@@ -887,6 +901,9 @@ scenario_20:
 scenario_21:
   name: "sql_columns_map_by_position"
 
+  read_references:
+    - reference/logic-and-integrations.md
+
   codebase:
     files: []
 
@@ -917,6 +934,9 @@ scenario_21:
 
 scenario_22:
   name: "traditional_table_inside_layout"
+
+  read_references:
+    - reference/traditional-ui-creation.md
 
   codebase:
     files: []
@@ -996,3 +1016,115 @@ scenario_24:
 
       - point: "Avoids getDataModel for orientation on a large module"
         description: "The response notes that `getDataModel` on a large module can be very large (100k+ characters) and reserves it, or the per-element getters, for drilling into the parts that need detail."
+
+      - point: "Wraps the probe in its own edit session"
+        description: "The response calls `startOmlEditSession` before the probe and `endOmlEditSession` after it, because `applyModelApiCode` only runs inside an edit session, and it gives (or says it gives) the Beta notice for those session calls. Running the probe with no session, or leaving the session open afterwards, is WRONG."
+
+scenario_25:
+  name: "open_named_module_then_close_it"
+
+  read_references:
+    - reference/module-discovery.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    I'm driving Service Studio through its MCP server and already hold a
+    session token. `listOpenModules` shows only `CustomerPortal` open. The user
+    asks: "Add a `Discount` decimal attribute to the `Order` entity in the
+    OrderManagement module." List the MCP tool calls you would make, in order,
+    with their JSON arguments, from finding the module to finishing the task,
+    and say what you tell the user along the way.
+
+  validation:
+    prerequisites:
+      - point: "Gives an ordered sequence of MCP tool calls"
+        description: "The response lists concrete MCP tool calls with JSON arguments, in order, that end with the attribute added."
+
+    skill_scoring:
+      - point: "Finds the module with `searchApps`"
+        description: "Because the module isn't open, the response calls `searchApps` with a search for the module's name, e.g. `{ \"input\": { \"search\": \"OrderManagement\" }, \"sessionToken\": … }`. Guessing a key, or telling the user to open the module without trying `searchApps`, is WRONG."
+
+      - point: "Opens it with `openModule` by key"
+        description: "It calls `openModule` with `{ \"input\": { \"moduleKey\": \"<key from searchApps>\" }, \"sessionToken\": … }`, the module's `key` from the `searchApps` result. Passing the module's name as `moduleKey`, or opening a module before confirming one match, is WRONG. It says that when several modules match, or none, it asks the user and opens nothing."
+
+      - point: "Handles `opening` by calling again"
+        description: "It says a `status: \"opening\"` result means Studio hasn't finished, and that it calls `openModule` again with the same `moduleKey` to keep waiting, not that the opening failed."
+
+      - point: "Works through the returned `tabId`"
+        description: "Every later call (`getDataModel`, `startOmlEditSession`, `applyModelApiCode`, `omlMerge`, `endOmlEditSession`, `closeModule`) passes the `module.tabId` returned by `openModule` as `eSpaceName`, inside `input`."
+
+      - point: "Wraps the edit in an edit session"
+        description: "It calls `startOmlEditSession` before the first `applyModelApiCode`, and `endOmlEditSession` after `omlMerge` returns `merged: true` and before `closeModule`, because `applyModelApiCode` only runs inside a session and `closeModule` returns `notClosed` while one is open. Applying with no session, or calling `closeModule` with the session still open, is WRONG."
+
+      - point: "Tells the user it opened the module"
+        description: "It tells the user which module it opened."
+
+      - point: "Closes the module it opened, warning about the save prompt"
+        description: "Once the work is merged, it calls `closeModule` with the `tabId`, and first tells the user that Studio will ask them to Save, Don't Save or Keep Open because the merged module has unsaved changes. On `status: \"closing\"` it calls `closeModule` again with the same `eSpaceName`. Leaving the module open with no mention, or closing without warning the user, is WRONG."
+
+scenario_26:
+  name: "ambiguous_module_name_resolved_by_tab_id"
+
+  read_references:
+    - reference/module-discovery.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    Through the Service Studio MCP server, my `applyModelApiCode` call with
+    `"eSpaceName": "Orders"` failed with `MODULE_AMBIGUOUS`: "Several open
+    modules match 'Orders'; pass the tabId of the one to work on as
+    eSpaceName. Candidates: Orders (tabId 'a1'), Orders (tabId 'b7')." The
+    user said "add the attribute to the module I have open". What do you do
+    next?
+
+  validation:
+    prerequisites:
+      - point: "Does not blame the lambda"
+        description: "The response does not treat the error as a problem with the C# code and does not rewrite the lambda as the fix."
+
+    skill_scoring:
+      - point: "Retries with a `tabId`, not the name"
+        description: "The response retries `applyModelApiCode` with one of the candidates' `tabId` values as `eSpaceName` (e.g. `\"eSpaceName\": \"b7\"`), not with the name again. (The key works only when the two tabs hold different modules; when they hold the same module it matches both.)"
+
+      - point: "Uses `isSelected` to resolve 'the module I have open'"
+        description: "It calls `listOpenModules` and picks the row whose `isSelected` is true among the candidates, because `isSelected` marks the tab in front of its Studio window."
+
+      - point: "Asks instead of guessing when it can't tell"
+        description: "It says that if both candidates are selected (one per Studio window) or neither is, it asks the user which one, for example by naming each tab's window or environment, rather than picking one."
+
+scenario_27:
+  name: "several_environments_carry_environment_into_open"
+
+  read_references:
+    - reference/module-discovery.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    I'm driving Service Studio through its MCP server and already hold a
+    session token. The user asks: "Add a `Phone` text attribute to the
+    `Customer` entity in the CRM module." It isn't open, so I called
+    `searchApps` with `{ "input": { "search": "CRM" }, "sessionToken": … }`
+    and it failed with `ENVIRONMENT_REQUIRED`: "Service Studio's windows are
+    logged in to several environments: 'dev.example.com', 'qa.example.com'.
+    Ask the developer which one to search, then pass it as environment."
+    List the MCP tool calls you make from here until the module is open, with
+    their JSON arguments, and what you do if `openModule` returns
+    `status: "opening"`.
+
+  validation:
+    prerequisites:
+      - point: "Asks the user which environment"
+        description: "The response asks the user which of the two environments they mean before searching again, instead of picking one itself."
+
+    skill_scoring:
+      - point: "Passes the chosen environment to `openModule` too"
+        description: "The `openModule` call carries the environment the user chose next to the key, e.g. `{ \"input\": { \"moduleKey\": \"<key from searchApps>\", \"environment\": \"qa.example.com\" }, \"sessionToken\": … }`. Passing it only to `searchApps` and calling `openModule` with `moduleKey` alone is WRONG: with several environments logged in, that fails with `ENVIRONMENT_REQUIRED` again."
+
+      - point: "Keeps `moduleKey` and `environment` when it calls again"
+        description: "On `status: \"opening\"`, it calls `openModule` again with the same `moduleKey` and the same `environment` to keep waiting for the same opening. Calling again without `environment`, or treating `opening` as a failure, is WRONG."

@@ -434,3 +434,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# koda run-eval results (/koda:run-eval)
+test_outputs/

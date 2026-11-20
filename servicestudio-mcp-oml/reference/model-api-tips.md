@@ -37,7 +37,7 @@ The "Mobile" naming above applies to Reactive Web and Mobile modules. **Traditio
 
 The MCP host adds `OutSystems.Model.UI`, `OutSystems.Model.UI.Web`, and `OutSystems.Model.UI.Mobile` for `applyModelApiCode` — so all of the interfaces in the table above work unqualified inside an `applyModelApiCode` lambda. See [`../SKILL.md`](../SKILL.md) § 4 for the full default-imports list.
 
-For Traditional descent recipes (find by name, list, mutate, walk widgets, add a session variable) see [`traditional-patterns.md`](traditional-patterns.md). The module's style is exposed on `listApps` → `moduleType` field.
+For Traditional descent recipes (find by name, list, mutate, walk widgets, add a session variable) see [`traditional-patterns.md`](traditional-patterns.md). The module's style is exposed on `listOpenModules` → `moduleType` field (`listApps` on older builds).
 
 #### Duplicate Interface Names
 

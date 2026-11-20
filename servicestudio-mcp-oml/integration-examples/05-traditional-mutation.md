@@ -3,6 +3,8 @@
 **Transport**: MCP (Service Studio in-process MCP Server).
 **Scenario**: Style-detect → enumerate Traditional screens → read one screen's structure → add a session variable + rename a screen, all in one `applyModelApiCode` lambda → surface back to Service Studio via the merge UI. The canonical walkthrough for a Claude Code agent that needs to mutate a Traditional Web module.
 
+> **Edit session.** This walkthrough shows only the calls its point needs. Call `startOmlEditSession` before the first `applyModelApiCode`, and `endOmlEditSession` after the final merge ([`01-add-entity-via-mcp.md`](01-add-entity-via-mcp.md), [`../SKILL.md`](../SKILL.md) § 2.1).
+
 The Traditional read surface (5 single-object `*Traditional` + 5 `*NamesTraditional`), their Model-API-code output, the host-default `imports`, and the per-style descent patterns referenced below are all documented in [`../reference/traditional-patterns.md`](../reference/traditional-patterns.md). For Mobile / Reactive, see [`01-add-entity-via-mcp.md`](01-add-entity-via-mcp.md).
 
 ---
@@ -15,9 +17,9 @@ The Traditional read surface (5 single-object `*Traditional` + 5 `*NamesTraditio
 
 Four MCP calls, plus IDE-side finalisation. (Every call carries the `sessionToken` obtained once from `createSessionToken` — see [`01-add-entity-via-mcp.md`](01-add-entity-via-mcp.md) Call 0.)
 
-### Call 1 — `listApps` (style detection)
+### Call 1 — `listOpenModules` (style detection)
 
-Always start with `listApps` to confirm the module style. Picking the right read verb depends on it. `listApps` is the one tool whose arguments are **not** wrapped in `input`:
+Always start with `listOpenModules` (`listApps` on older builds) to confirm the module style. Picking the right read verb depends on it. `listOpenModules` is the one tool whose arguments are **not** wrapped in `input`:
 
 **Request**:
 
@@ -29,9 +31,11 @@ Always start with `listApps` to confirm the module style. Picking the right read
 
 ```jsonc
 {
-  "apps": [
+  "modules": [
     {
       "key": "9803f00d-...",
+      "tabId": "...",
+      "isSelected": true,
       "name": "FloorPlan",
       "kind": "eSpace",
       "isOpen": true,
@@ -42,7 +46,7 @@ Always start with `listApps` to confirm the module style. Picking the right read
 }
 ```
 
-`moduleType: "Traditional"` → use the `*Traditional` verbs for UI reads, NOT the Reactive/Mobile `getScreen` / `getWebBlock` (those are Mobile-bound).
+`moduleType: "Traditional"` → use the `*Traditional` verbs for UI reads, NOT the Reactive/Mobile `getScreen` / `getWebBlock` (those are Mobile-bound). FloorPlan is open in one tab only, so the calls below pass its `name`; when a module is open in several tabs, pass the row's `tabId` instead ([`../reference/module-discovery.md`](../reference/module-discovery.md)).
 
 ### Call 2 — `getScreenNamesTraditional`
 

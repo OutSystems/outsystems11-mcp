@@ -5,8 +5,8 @@ This workspace authors OutSystems 11 apps by mutating the **currently open
 `http://127.0.0.1:41820/mcp`). There is no source tree, build, or test runner —
 work is design-time OML mutation via the `applyModelApiCode` tool.
 
-> **Beta Feature.** The write tools (mutating `applyModelApiCode` lambdas, `omlMerge`,
-> `omlReset`, `omlRefreshReferences`, `omlPublish`) are a Beta Feature. The first time you use
+> **Beta Feature.** The write tools (mutating `applyModelApiCode` lambdas, `startOmlEditSession`,
+> `endOmlEditSession`, `omlMerge`, `omlReset`, `omlRefreshReferences`, `omlPublish`) are a Beta Feature. The first time you use
 > one in a conversation, tell the user and share https://www.outsystems.com/legal/beta-features-agreement. Read tools are Generally Available.
 
 Full contract and reference material live in **`servicestudio-mcp-oml/`**. Consult
@@ -19,20 +19,37 @@ condensed restatement; `SKILL.md` wins if they ever disagree.
 - **Call `createSessionToken` exactly once, first** (`{ "clientName": "…" }`;
   the user approves a dialog; the result text is the token). Pass it as a
   top-level `sessionToken` on every later call; reuse it, never request another.
-- **Every tool except `listApps` wraps its arguments in `input`:**
-  `{ "input": { … }, "sessionToken": "<token>" }`; `listApps` is just
-  `{ "sessionToken": "<token>" }`. `applyModelApiCode` →
+- **Every tool except `listOpenModules` wraps its arguments in `input`:**
+  `{ "input": { … }, "sessionToken": "<token>" }`; `listOpenModules` (`listApps` on
+  older builds) is just `{ "sessionToken": "<token>" }`. `applyModelApiCode` →
   `input: { eSpaceName, code, imports }` (all required); `omlMerge` →
-  `input: { eSpaceName, mutatedOmlPath }`; `omlReset` → `input: { eSpaceName }`.
+  `input: { eSpaceName, mutatedOmlPath }`; `omlReset`, `startOmlEditSession` and
+  `endOmlEditSession` → `input: { eSpaceName }`.
+- **Pass an open module's `tabId` from `listOpenModules` as `eSpaceName`.** A key or
+  name open in several tabs fails with `MODULE_AMBIGUOUS`; retry with the `tabId` the
+  user means. A module that isn't open: `searchApps`, then `openModule` with its key,
+  only when the user names it (ask when several match). On `ENVIRONMENT_REQUIRED`, ask
+  the user which environment and pass it as `environment` to both. Close what you opened with
+  `closeModule`, never a module the user opened; before closing a merged module, tell
+  the user Studio will ask them to save. Older builds (`listApps`) have none of these
+  tools: ask the user to open the module (SKILL.md § 0.1).
 - **Summarise a module with one probe**
   (`servicestudio-mcp-oml/examples/ProbeModuleInventory.cs`), not one getter per element.
-  The probe throws before saving, so it's a read: use it even when asked not to change anything.
+  The probe throws before saving, so use it even when asked not to change anything. It still
+  needs an edit session: start one, probe, end it, and give the Beta notice for those calls.
+  Don't probe inside a session you didn't start (SKILL.md § 2).
 - **Keep the developer's layout when you edit an existing flow.** Shift the nodes below the
   insertion point and place the new node in the gap. Use the full layout pass only on flows
   you created.
 
 ## Non-negotiable rules for `applyModelApiCode`
 
+- **Writes need an edit session.** Call `startOmlEditSession` before the first
+  `applyModelApiCode` on a module; without it the apply fails with `No OML edit session
+  is started`. A merge doesn't end the session. Call `endOmlEditSession` once the last
+  merge returned `merged: true` (SKILL.md § 2.1).
+- **Outside an edit session, read one module one call at a time.** Parallel reads can
+  fail with `OML not found: …-in.oml`; run the failed read again on its own (SKILL.md § 2).
 - The `code` arg is a **full `Action<IESpace>` lambda**: `eSpace => { … }`.
   - The parameter must be literally **`eSpace`**.
   - **Never** call `eSpace.Save(...)` — the host appends its own save.
@@ -69,11 +86,12 @@ condensed restatement; `SKILL.md` wins if they ever disagree.
   members: `servicestudio-mcp-oml/reference/reactive-widget-api.md`.
 - **Finalise with `omlMerge`:** after the final successful mutation, call
   `omlMerge` with `input: { eSpaceName, mutatedOmlPath }` to open Service
-  Studio's Compare-and-Merge window. Skip only for read-only tasks or when
-  nothing saved.
-- **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `omlReset`, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: older Service Studio builds reject the whole merge. Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
-- **`omlRefreshReferences` drops the session pointer** (unmerged chain vanishes
-  from reads) — refresh before a chain or merge first. **`omlPublish` only when
+  Studio's Compare-and-Merge window, then `endOmlEditSession`. Skip the merge only for
+  read-only tasks or when nothing saved.
+- **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `endOmlEditSession` and `startOmlEditSession` again, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: older Service Studio builds reject the whole merge. Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
+- **Call `omlRefreshReferences` outside an edit session** — inside one it ends a
+  session with unmerged edits, or leaves the working copy without the refreshed
+  references (SKILL.md § 3.2). **`omlPublish` only when
   the user explicitly asks to publish** (returns `blocked` until the user grants
   the write permission).
 - **The *same* `An error occurred invoking '<toolName>'` on every tool means the
@@ -96,7 +114,7 @@ in code (`ServiceStudio.Plugin.NRWidgets.IInput`).
 
 ## Module styles
 
-`listApps` reports each module's `moduleType`. `applyModelApiCode` is
+`listOpenModules` reports each module's `moduleType`. `applyModelApiCode` is
 style-agnostic, but for **Traditional** modules use the `*Traditional` read
 verbs (`getScreenTraditional`, etc.) and `eSpace.WebFlows` instead of
 `eSpace.MobileFlows`.

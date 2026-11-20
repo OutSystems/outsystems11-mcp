@@ -13,7 +13,7 @@ working on a Reactive / Mobile module.
 
 ## When does this apply
 
-Call `listApps` first. If the module you care about has `moduleType`
+Call `listOpenModules` first (`listApps` on older builds). If the module you care about has `moduleType`
 equal to `"Traditional"` or `"TraditionalLibrary"`, the patterns in
 this file apply. For `"Reactive"`, `"Mobile"`, or their library
 variants, use the Mobile-/Reactive-shaped recipes in
@@ -220,7 +220,7 @@ via subsequent assignments.
   `flow.GetAllDescendantsOfType<IWebScreen>()`. The Mobile equivalent
   `IMobileFlow.Screens` doesn't have a Traditional analogue.
 - **`eSpace.ModuleType` doesn't exist on `IESpace`.** Use the `moduleType`
-  field on `listApps` instead — the verb selection already encodes the
+  field on `listOpenModules` instead — the verb selection already encodes the
   style, so a runtime check is rarely needed.
 - **`Signature` types catch both local and referenced objects.**
   `IWebScreenSignature` matches the concrete local `WebScreen` AND

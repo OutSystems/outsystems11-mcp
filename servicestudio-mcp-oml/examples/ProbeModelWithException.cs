@@ -1,5 +1,5 @@
 // Read-only discovery probe: collect facts about the module into a string and return them through exceptionMessage (nothing is saved and the session pointer does not move)
-// The MCP code sandbox rejects Console, System.*-qualified names and reflection, so throwing is the output channel. validationMessages still come back. Verified live 2026-09-30.
+// The MCP code sandbox rejects Console, System.*-qualified names and reflection, so throwing is the output channel. validationMessages still come back. Verified live 2026-09-30. Needs an open edit session (SKILL.md § 2.1).
 
 using OutSystems.Model;
 using OutSystems.Model.Enumerations;

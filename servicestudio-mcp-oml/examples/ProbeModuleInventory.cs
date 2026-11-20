@@ -1,5 +1,5 @@
 // Summarise a whole module in ONE read-only call: entities (with attribute types), structures, screens per UI flow (with roles), server actions (with folders), client actions, roles, integrations and references
-// Context: works on Reactive and Traditional modules; nothing is saved (throw-probe). Verified live 2026-10-17: OrderManagement (17 entities, 15 screens, 43 server actions) came back as ~5.6k characters, against ~113k for getDataModel; the TrueChange messages come back in the same result. Drill into single elements with the get* tools afterwards.
+// Context: works on Reactive and Traditional modules; nothing is saved (throw-probe), but like any applyModelApiCode call it needs an edit session: startOmlEditSession first, endOmlEditSession after (SKILL.md § 2). Verified live 2026-10-17: OrderManagement (17 entities, 15 screens, 43 server actions) came back as ~5.6k characters, against ~113k for getDataModel; the TrueChange messages come back in the same result. Drill into single elements with the get* tools afterwards.
 
 using OutSystems.Model;
 using OutSystems.Model.Enumerations;

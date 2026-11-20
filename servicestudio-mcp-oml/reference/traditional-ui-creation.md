@@ -20,7 +20,7 @@ For a full worked screen, see
 > warning) all work as written. An unqualified `CreateWidget<ITextWidget>()` bound to the
 > Reactive/Mobile type and failed with **CS0311**, so fully qualify Web widget types.
 
-> **Applies to Traditional only.** Call `listApps` first; these recipes apply when `moduleType` is
+> **Applies to Traditional only.** Call `listOpenModules` first; these recipes apply when `moduleType` is
 > `"Traditional"` or `"TraditionalLibrary"`. For Reactive / Mobile, use
 > [`patterns-by-element.md`](patterns-by-element.md) (`eSpace.MobileFlows`, `IMobileScreen`,
 > `screen.CreateScreenAggregate(...)`, `ServiceStudio.Plugin.NRWidgets.*`).

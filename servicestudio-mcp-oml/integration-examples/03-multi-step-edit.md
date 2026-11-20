@@ -3,6 +3,8 @@
 **Transport**: MCP (Service Studio in-process MCP Server).
 **Scenario**: User asks for two related mutations — add a `Customer` entity, *then* add an `Email` attribute to it. The key teaching point: **the MCP host auto-chains successive `applyModelApiCode` calls via its per-module session pointer**. Each successful call writes a new out file and advances the pointer to it; the next call observes the pointer and reuses it as its input — invisibly to the agent, which never sees the path.
 
+> **Edit session.** The chain runs inside an edit session: call `startOmlEditSession` before the first `applyModelApiCode`, and `endOmlEditSession` after the final merge ([`01-add-entity-via-mcp.md`](01-add-entity-via-mcp.md), [`../SKILL.md`](../SKILL.md) § 2.1). The working copy the session checks out is the pointer described here.
+
 See [`../reference/mcp-session-pointer.md`](../reference/mcp-session-pointer.md) for the pointer mechanics. All `code` payloads below are **full `eSpace => { ... }` lambdas** that end in `}` and do **not** include `eSpace.Save(...)` — see [`../reference/lambda-contract.md`](../reference/lambda-contract.md).
 
 ---
@@ -156,20 +158,24 @@ Sometimes you've made one successful change but want to discard it and start ove
 { "input": { "eSpaceName": "MyModule", "code": "eSpace => { /* first mutation */ }", "imports": [] }, "sessionToken": "<token>" }
 // → { "exceptionMessage": "", ..., "mutatedOmlPath": "C:\\…\\<run1>-out.oml" }
 
-// Call 2: omlReset — drop the chain (the discarded copy is left on disk, not deleted)
+// Call 2: omlReset — drop the chain and end the edit session (the discarded copy is left on disk, not deleted)
 { "input": { "eSpaceName": "MyModule" }, "sessionToken": "<token>" }
 // → { "discardedChanges": true, "eSpaceName": "MyModule" }
 
-// Call 3: next applyModelApiCode re-snapshots the live module
+// Call 3: startOmlEditSession again — the reset ended the session, and the new working copy is the live module
+{ "input": { "eSpaceName": "MyModule" }, "sessionToken": "<token>" }
+// → { "started": true }
+
+// Call 4: applyModelApiCode against the fresh working copy
 { "input": { "eSpaceName": "MyModule", "code": "eSpace => { /* fresh mutation against the live state */ }", "imports": [] }, "sessionToken": "<token>" }
-// → { "exceptionMessage": "", ..., "mutatedOmlPath": "C:\\…\\<run3>-out.oml" }
+// → { "exceptionMessage": "", ..., "mutatedOmlPath": "C:\\…\\<run4>-out.oml" }
 ```
 
-If the reset turns out to be a mistake, `omlMerge` with Call 1's `mutatedOmlPath` brings the dropped mutation back — the reset dropped the pointer, not the file.
+The reset can't be undone. Call 1's `-out.oml` stays on disk, but `omlMerge` refuses it once the reset has run, because it only accepts the module's tracked working copy ([`../reference/mcp-session-pointer.md`](../reference/mcp-session-pointer.md)). If the user might want the first mutation back, merge it before Call 2.
 
 See [`04-oml-reset.md`](04-oml-reset.md) for a fuller walkthrough of the drop-and-restart scenario.
 
-**`omlRefreshReferences` also drops the pointer.** Refreshing references (`input: { eSpaceName }` plus the token) mid-chain makes the unmerged chain vanish from reads, exactly like a reset (the `-out.oml` stays on disk). Refresh *before* Call 1, or `omlMerge` first.
+**Refresh references outside an edit session.** With unmerged edits, `omlRefreshReferences` ends the session like a reset, and those edits are lost. With none, the session stays open on a working copy that lacks the refreshed references. Refresh before `startOmlEditSession`, or merge and end the session first ([`../SKILL.md`](../SKILL.md) § 3.2).
 
 ---
 

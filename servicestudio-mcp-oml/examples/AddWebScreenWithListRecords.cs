@@ -1,5 +1,5 @@
 // Create a Traditional Web screen PostFeed that fetches Post records in a Preparation aggregate and lists them with a ListRecords widget
-// Context: TRADITIONAL WEB module (listApps style == "Traditional"). The module has a web flow named PlansFlow, a server entity named Post (with attributes Content, CreatedOn), and an existing screen named Dashboard.
+// Context: TRADITIONAL WEB module (listOpenModules moduleType == "Traditional"). The module has a web flow named PlansFlow, a server entity named Post (with attributes Content, CreatedOn), and an existing screen named Dashboard.
 //
 // NOTE — this is the Traditional Web creation example. Do NOT confuse it with examples/AddWebBlock.cs,
 // which despite its name builds a MOBILE block (eSpace.MobileFlows / CreateScreenAggregate / NRWidgets).

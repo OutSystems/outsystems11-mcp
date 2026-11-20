@@ -8,7 +8,9 @@ This transcript is a **real captured run** against a live module (`FloorPlan`,
 a Traditional Web app) on 2026-06-03. The request envelopes have since been
 updated to the current contract (a `sessionToken` from `createSessionToken`,
 arguments wrapped in `input`, capitalised validation `type` values); the model
-output and messages are as captured.
+output and messages are as captured. It predates the edit session: today, call
+`startOmlEditSession` before the first `applyModelApiCode` and `endOmlEditSession`
+after the final merge ([`../SKILL.md`](../SKILL.md) § 2.1).
 
 The recipe itself lives in
 [`../reference/patterns-by-element.md`](../reference/patterns-by-element.md) §

@@ -68,7 +68,7 @@ in SKILL.md or the reference docs, update the matching scenario points.
   trigger phrases and tool names. Edit it deliberately.
 - **Mind Kiro's 1024-character cap on `description`.** Claude Code has no equivalent
   limit, so this is the binding constraint on the trigger list, and the current
-  description is 996 characters, only 28 under it. If you add trigger phrases, measure
+  description is 1017 characters, only 7 under it. If you add trigger phrases, measure
   the folded length — Kiro will reject the skill before any other harness complains.
   `name` must also stay lowercase-with-hyphens and match the folder name (Kiro
   enforces this; Claude Code does not).

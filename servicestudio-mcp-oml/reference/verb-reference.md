@@ -10,14 +10,17 @@ started it fails with `ConnectionRefused`. **Tool names are camelCase, with no
 Tools fall into three buckets:
 
 - **Native host tools** that act on the live Service Studio session directly:
-  `createSessionToken`, `listApps`, and the host-only `omlReset` / `omlMerge` /
-  `omlRefreshReferences` / `omlPublish`.
+  `createSessionToken`, `listOpenModules`, `searchApps`, `openModule`,
+  `closeModule`, and the host-only `startOmlEditSession` / `endOmlEditSession` /
+  `omlReset` / `omlMerge` / `omlRefreshReferences` / `omlPublish`.
 - **Sidecar-backed read tools** — `getDataModel`, `getScreen`, `runQuery`,
-  `getValidationMessages`, … Each one snapshots the open module to
-  `%TEMP%\ServiceStudio.MCPServer\<runId>-in.oml`, runs the bundled sidecar, and returns
-  the result. One child process per call.
-- **The write tool** `applyModelApiCode`, which works the same way but also
-  injects the save and advances the session pointer on success.
+  `getValidationMessages`, … Each one reads the edit session's working copy when one is
+  open, and otherwise a snapshot of the open module at
+  `%TEMP%\ServiceStudio.MCPServer\<runId>-in.oml`. It runs the bundled sidecar and returns
+  the result. One child process per call. Outside an edit session, don't call them in
+  parallel on one module: see [`../SKILL.md`](../SKILL.md) § 2.
+- **The write tool** `applyModelApiCode`, which works the same way but needs an edit
+  session, injects the save, and advances the working copy on success.
 
 The sidecar verb name equals the MCP tool name (each tool class sets
 `VerbName = McpToolNames.<X>`). The host injects `omlPath` (the snapshot, or the
@@ -42,19 +45,24 @@ Verified live against Service Studio 11 on 2026-09-30.
    tags it `x-mcp-header: SessionToken`). A call with no token, or a token this
    server didn't issue, is rejected. **Send it on every call**, including
    `omlPublish`, `omlRefreshReferences` and `getRoleExceptions` — their schemas don't declare it, but send it anyway: `getRoleExceptions` rejects a call without it ("This tool requires a valid session token", verified 2026-10-01).
-3. **Every tool except `listApps` wraps its own arguments in `input`:**
+3. **Every tool except `listOpenModules` wraps its own arguments in `input`:**
 
 ```jsonc
 { "input": { "eSpaceName": "MyModule", "includeJson": "Never" }, "sessionToken": "<token>" }   // getDataModel
-{ "sessionToken": "<token>" }                                                                // listApps
+{ "sessionToken": "<token>" }                                                                // listOpenModules (listApps on older builds)
 ```
 
 The old flat shape (`{ "eSpaceName": …, … }` at top level) no longer deserializes.
 
 ## `eSpaceName`
 
-**Every tool except `listApps` and `createSessionToken` takes a required
-`input.eSpaceName:string`** — the target module's `name` from `listApps`. To keep
+**Every tool except `createSessionToken`, `listOpenModules`, `searchApps` and
+`openModule` takes a required `input.eSpaceName:string`**: the `tabId`, `key` or
+`name` of a `listOpenModules` row with `isOpen: true`, tried in that order. Prefer the
+`tabId`. A key or name open in several tabs fails with `MODULE_AMBIGUOUS` (the message
+lists each candidate's `tabId`); a value that matches no open module fails with
+`MODULE_NOT_LOADED`. Older builds take the `name` from `listApps`. Details:
+[`module-discovery.md`](module-discovery.md). To keep
 the Args columns below scannable, neither `eSpaceName` nor the `input` / `sessionToken`
 envelope is repeated in every row — assume they're always there.
 
@@ -97,8 +105,9 @@ calling the sidecar**, so the value you send is effectively ignored — yet the
 field must be present or the MCP call fails to deserialize. **Always pass
 `"Never"`.**
 
-The name-list tools (`get…Names`), `listApps`, `runQuery`,
-`getValidationMessages`, `omlReset`, and `omlMerge` take **no** `includeJson`.
+The name-list tools (`get…Names`), `listOpenModules`, `searchApps`, `openModule`,
+`closeModule`, `runQuery`, `getValidationMessages`, `omlReset`, and `omlMerge` take
+**no** `includeJson`.
 
 ## Write tool — `applyModelApiCode`
 
@@ -109,7 +118,8 @@ save against a host-allocated path, re-closes, and forwards to the sidecar. See
 
 **Args:**
 
-- `input.eSpaceName` (string, required) — the target module's `name` from `listApps`.
+- `input.eSpaceName` (string, required) — an open module's `tabId`, `key` or `name` from
+  `listOpenModules` (see "`eSpaceName`" above).
 - `code` (string, required) — a full `eSpace => { … }` lambda ending in `}`.
   No `eSpace.Save(...)`. Parameter must be named `eSpace`.
 - `imports` (string[], required; `[]` is fine) — extra namespaces, **`OutSystems.Model`
@@ -156,7 +166,7 @@ file was written and `exceptionMessage` is empty.
 The code-returning reads return a **string** of Model API C# code (the same
 dialect you emit into `applyModelApiCode`'s `code` — pattern-match it). The
 name-list reads return a **string** of JSON. `runQuery`, `getValidationMessages`,
-and `listApps` return structured objects.
+`listOpenModules` and `searchApps` return structured objects.
 
 ### Data model & structures
 
@@ -185,7 +195,7 @@ and `listApps` return structured objects.
 
 These UI reads are **Mobile-bound** in the sidecar (they walk
 `eSpace.MobileFlows`) and return empty / "not found" on Traditional modules —
-use the `*Traditional` variants below when `listApps.moduleType` is `"Traditional"`
+use the `*Traditional` variants below when the module's `moduleType` is `"Traditional"`
 or `"TraditionalLibrary"`.
 
 | Tool | Args | Returns |
@@ -265,7 +275,10 @@ namespaces define an `IExternalSite`).
 | Tool | Args | Returns |
 |---|---|---|
 | `createSessionToken` | `clientName?` (top level, no `input`) | the token string — call once per agent session (see "Session token" above) |
-| `listApps` | only `sessionToken` | `{ apps: [{ key, name, kind:"eSpace", version, isOpen, isReference, moduleType }] }` — open module + loaded references. `moduleType` (formerly `style`) ∈ `Reactive`, `Mobile`, `Traditional`, `ReactiveLibrary`, `MobileLibrary`, `TraditionalLibrary`, `Service`, `Unknown` (see [`../SKILL.md`](../SKILL.md) § 4.1) |
+| `listOpenModules` | only `sessionToken` | `{ modules: [{ key, tabId?, isSelected?, name, kind:"eSpace", version, description, isOpen, isReference, moduleType }] }` — one row per open tab, plus the loaded references (no `tabId` / `isSelected`). `key` is the module's own key, stable across reopens; `tabId` names the tab; `isSelected` marks the tab in front of its window. `moduleType` (formerly `style`) ∈ `Reactive`, `Mobile`, `Traditional`, `ReactiveLibrary`, `MobileLibrary`, `TraditionalLibrary`, `Service`, `Unknown` (see [`../SKILL.md`](../SKILL.md) § 4.1). **Older builds call it `listApps`** and return the rows under `apps` |
+| `searchApps` | optional `input: { search?, application?, moduleType?, environment? }` | `{ environment, apps: [{ key?, name?, modules: [{ key, name, moduleType, lastChangedBy?, lastChangedAt?, isOpen, tabIds? }] }], hasMore, message }` — the modules of the environment Studio is logged in to, open or not, grouped by application. At most 50 modules, as whole applications; `hasMore` + `message` name what was left out. Narrow, don't page. `ENVIRONMENT_REQUIRED` when Studio's windows are logged in to several environments and no `environment` was passed: ask the user which one. `NOT_LOGGED_IN` / `SERVER_REQUEST_FAILED` on other failures ([`module-discovery.md`](module-discovery.md)) |
+| `openModule` | `input: { moduleKey, environment?, waitSeconds? }` (no `eSpaceName`) | `{ status: "opened"\|"alreadyOpen"\|"opening"\|"notOpened", message, module?, inNewWindow? }` — opens a module `searchApps` lists, by its key, in a new tab without moving the developer. Pass the `environment` you passed to `searchApps`, if any; without it, several logged-in environments fail with `ENVIRONMENT_REQUIRED`. `module` is the tab's `listOpenModules` row: pass `module.tabId` as `eSpaceName`. On `opening`, call again with the same `moduleKey` and `environment`. Only for a module the user's request names ([`module-discovery.md`](module-discovery.md)) |
+| `closeModule` | `input: { eSpaceName, closeEmptyWindow?, waitSeconds? }` | `{ status: "closed"\|"closing"\|"notClosed", message, changes?: "saved"\|"discarded", emptyWindow?: "closed"\|"leftOpen" }` — closes a tab this session opened with `openModule`; refuses any other. Unsaved changes make Studio ask the developer; on `closing`, call again with the same `eSpaceName`. Pass `closeEmptyWindow` only with the user's answer, after it asked ([`module-discovery.md`](module-discovery.md)) |
 
 > **`searchModel` was removed** from the MCP host (no cross-element substring
 > search tool exists anymore). Find elements by name via the matching
@@ -276,16 +289,18 @@ namespaces define an `IExternalSite`).
 
 | Tool | Args | Returns |
 |---|---|---|
-| `omlReset` | `eSpaceName:string` | `{ discardedChanges:bool, eSpaceName:string }` — throws away that module's unmerged chain; `discardedChanges:false` means there was none and nothing was done (not a failure). The discarded OML is **not deleted**, so an accidental reset is undone by passing the last apply's `mutatedOmlPath` to `omlMerge` (until the next Studio startup clears the temp folder). `MODULE_NOT_LOADED` if the module isn't open (see [`mcp-session-pointer.md`](mcp-session-pointer.md)) |
-| `omlRefreshReferences` | `eSpaceName:string` (send `sessionToken` too, although the schema omits it) | `{ message, hasErrors:bool, hasWarnings:bool }` — refreshes every reference of the **live** module to its latest version (Manage Dependencies → Refresh All); does not add new dependencies. **Drops the session pointer** — an unmerged chain vanishes from reads (its `-out.oml` stays on disk). Verified 2026-09-30 |
+| `startOmlEditSession` | `eSpaceName:string` | `{ started:true }` (verified 2026-11-19). Checks out a working copy of the module; required before `applyModelApiCode`. Fails with `An OML edit session is already started for this module. Call endOmlEditSession before starting a new one.` when one is open (see [`../SKILL.md`](../SKILL.md) § 2.1) |
+| `endOmlEditSession` | `eSpaceName:string` | `{ ended:true, discardedChanges:bool }` (verified 2026-11-19). Deletes the working copy; `discardedChanges:true` means edits applied after the last merge were thrown away, unrecoverably. Fails with `No OML edit session is started. Call startOmlEditSession first.` when none is open |
+| `omlReset` | `eSpaceName:string` | `{ discardedChanges:bool, eSpaceName:string }` — throws away that module's unmerged chain and ends its edit session; `discardedChanges:false` means there was none and nothing was done (not a failure; an open session stays open). The discarded OML stays on disk, but `omlMerge` refuses it because it is no longer the tracked working copy, so a reset can't be undone. `MODULE_NOT_LOADED` if no open module matches `eSpaceName`, `MODULE_AMBIGUOUS` if several do. The response's `eSpaceName` is the module's name, whichever of `tabId`, `key` or `name` you passed (see [`mcp-session-pointer.md`](mcp-session-pointer.md)) |
+| `omlRefreshReferences` | `eSpaceName:string` (send `sessionToken` too, although the schema omits it) | `{ message, hasErrors:bool, hasWarnings:bool }` — refreshes every reference of the **live** module to its latest version (Manage Dependencies → Refresh All); does not add new dependencies. Call it outside an edit session: with unmerged edits it ends the session like `omlReset` and those edits are lost, and with none the session's working copy keeps the old references (see [`../SKILL.md`](../SKILL.md) § 3.2) |
 | `omlPublish` | `eSpaceName:string` (send `sessionToken` too, although the schema omits it) | 1-Click Publish of the live module, waits for the result → `{ published:bool, status:"success"|…, reason:string, messages:["Uploading","Compiling","Deploying","Done"] }` (verified 2026-10-03, 16 s for a small module). The module must be open in Service Studio, otherwise it fails with "Module 'X' is not open in Service Studio". Needs the user's "allow automatic merge and publish" permission in the MCP Server dialog; while it is withheld it returns at once with `{ published:false, status:"blocked", reason:"Publishing requires a write permission the user has not granted. …", messages:[] }` and publishes nothing (verified 2026-10-03). **Only on explicit user request.** |
-| `omlMerge` | `eSpaceName:string`, `mutatedOmlPath:string` | `{ merged:bool, message:string }` — merges the supplied OML into the named module and blocks until that resolves, then **clears that module's session pointer** so the next call re-snapshots the live module. Always check `merged` to verify the merge completed; on `true` the change is already in the module, so don't re-call with the same path (a successful merge deletes it, so a repeat fails with file-not-found regardless of whether the first call worked). Pass the `mutatedOmlPath` returned by the last successful `applyModelApiCode`; it's the default closing step (see [`mcp-session-pointer.md`](mcp-session-pointer.md)) |
+| `omlMerge` | `eSpaceName:string`, `mutatedOmlPath:string` | `{ merged:bool, message:string }` — merges the supplied OML into the named module and blocks until that resolves. It **doesn't end the edit session or reset its working copy**: later applies build on it and are merged the same way. Always check `merged` to verify the merge completed; on `true` the change is already in the module, so don't re-call with the same path. Pass the `mutatedOmlPath` returned by the last successful `applyModelApiCode`; it's the default closing step (see [`mcp-session-pointer.md`](mcp-session-pointer.md)). When the user reviews the merge, Studio brings the module's tab to the front so the Compare-and-Merge window shows |
 
 > **The merge mode is the user's, not yours.** Whether `omlMerge` opens the
 > Compare-and-Merge window for the user to review or accepts the changes with no
 > dialog is a Service Studio setting. There is no argument for it.
 >
-> **Envelope note.** Like every tool except `listApps`, these take their arguments
+> **Envelope note.** Like every tool except `listOpenModules`, these take their arguments
 > inside `input` — e.g. `{ "input": { "eSpaceName": …, "mutatedOmlPath": … }, "sessionToken": … }`.
 
 ## Common usage pattern
@@ -293,6 +308,8 @@ namespaces define an `IExternalSite`).
 When responding to a "modify the OML to do X" request:
 
 0. **Once per session:** `createSessionToken`, then send every call as `{ "input": {…}, "sessionToken": … }`.
+   **Per module:** pick its `tabId` from `listOpenModules` and pass it as `eSpaceName`; if
+   the module isn't open, see [`module-discovery.md`](module-discovery.md).
 1. **Read the existing state** with the matching read tool (`getDataModel`,
    `getScreen`, …). Output is C# in the dialect you'll emit. Pass the required
    args (`includeJson:"Never"`, `objectName` for single-element reads).
@@ -302,8 +319,9 @@ When responding to a "modify the OML to do X" request:
    [`../examples/`](../examples/) files are already in exactly this shape —
    full `eSpace => { … }` lambdas with no `eSpace.Save` — so you can use one
    verbatim as `code` and lift its `using` directives into `imports`.
-4. **Call `applyModelApiCode`** with `code` (+ any non-default `imports`). Don't
-   pass `omlPath` — the host injects it.
+4. **Call `startOmlEditSession`** once for the module, then **`applyModelApiCode`**
+   with `code` (+ any non-default `imports`). Don't pass `omlPath` — the host
+   injects it.
 5. **Inspect the response:**
    - `exceptionMessage` populated (or an MCP tool error) → runtime issue; fix
      and retry; the pointer didn't advance.
@@ -323,8 +341,10 @@ When responding to a "modify the OML to do X" request:
    — the default closing step of any mutating task. Check `merged` in the
    response. Skip only when nothing was saved
    (`mutatedOmlPath: ""`), the task was read-only, or the user asked you to
-   discard the chain (`omlReset`). See
+   discard the changes. See
    [`mcp-session-pointer.md`](mcp-session-pointer.md).
+8. **Call `endOmlEditSession`** once the last merge returned `merged: true`, or to
+   discard the changes the user doesn't want.
 
 The recovery loop in step 5 is the dominant teaching signal — see
 [`../integration-examples/02-recovery-from-compile-error.md`](../integration-examples/02-recovery-from-compile-error.md).

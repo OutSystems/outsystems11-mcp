@@ -2,24 +2,27 @@
 
 OutSystems 11 modules come in three UI flavours — **Reactive Web**,
 **Mobile**, and **Traditional Web** — plus Service / Library variants. The
-in-process MCP Server surfaces the module's style on every `listApps` entry
-via a `moduleType` field (called `style` in older builds).
+in-process MCP Server surfaces the module's style on every `listOpenModules` row
+(`listApps` on older builds) and every `searchApps` module, via a `moduleType` field
+(called `style` in older builds).
 
 ## Detecting the style
 
 ```jsonc
-// listApps response
+// listOpenModules response (older builds: listApps, with the rows under "apps")
 {
-  "apps": [
+  "modules": [
     {
       "key": "...",
+      "tabId": "...",
+      "isSelected": true,
       "name": "FloorPlan",
       "kind": "eSpace",
       "version": "...",
       "description": "...",
       "isOpen": true,
       "isReference": false,
-      "style": "Traditional"   // ← see enum below
+      "moduleType": "Traditional"   // ← see enum below
     }
   ]
 }
@@ -54,7 +57,7 @@ underlying sidecar — they walk `eSpace.MobileFlows` only and return empty /
 | Get one external site | `getExternalSite` | `getExternalSiteTraditional` |
 
 Each `*Traditional` tool's description tells you to prefer it when
-`listApps.style` is `"Traditional"` or `"TraditionalLibrary"`. The Traditional
+the module's `moduleType` is `"Traditional"` or `"TraditionalLibrary"`. The Traditional
 single-object verbs return **Model API C# code** (the same dialect as the
 Reactive/Mobile verbs and as `applyModelApiCode`'s `code` arg), so you can
 pattern-match the output directly. `IExternalSite` is style-specific — there

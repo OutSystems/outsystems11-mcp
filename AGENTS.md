@@ -17,8 +17,8 @@ When **using** this skill you author OutSystems 11 apps by mutating the
 or test runner involved in that work — it is design-time OML mutation via the
 `applyModelApiCode` tool.
 
-> **Beta Feature.** The write tools (mutating `applyModelApiCode` lambdas, `omlMerge`,
-> `omlReset`, `omlRefreshReferences`, `omlPublish`) are a Beta Feature. The first time you use
+> **Beta Feature.** The write tools (mutating `applyModelApiCode` lambdas, `startOmlEditSession`,
+> `endOmlEditSession`, `omlMerge`, `omlReset`, `omlRefreshReferences`, `omlPublish`) are a Beta Feature. The first time you use
 > one in a conversation, tell the user and share https://www.outsystems.com/legal/beta-features-agreement. Read tools are Generally Available.
 
 Full contract and reference material live in **`servicestudio-mcp-oml/`**. Consult
@@ -35,29 +35,48 @@ disagree.
   approve the request in Service Studio before you call it.
   Pass it as a top-level `sessionToken` on every later call and reuse it across
   reconnects — never request a second one.
-- **Every tool except `listApps` wraps its arguments in `input`:**
-  `{ "input": { … }, "sessionToken": "<token>" }`. `listApps` is just
-  `{ "sessionToken": "<token>" }`. There is no flat shape. Examples:
+- **Every tool except `listOpenModules` wraps its arguments in `input`:**
+  `{ "input": { … }, "sessionToken": "<token>" }`. `listOpenModules` (`listApps`
+  on older builds) is just `{ "sessionToken": "<token>" }`. There is no flat shape. Examples:
   `applyModelApiCode` → `input: { eSpaceName, code, imports }` (all three
-  required); `omlMerge` → `input: { eSpaceName, mutatedOmlPath }`; `omlReset` →
-  `input: { eSpaceName }`. (`omlRefreshReferences`, `omlPublish` and `getRoleExceptions` take
+  required); `omlMerge` → `input: { eSpaceName, mutatedOmlPath }`; `omlReset`,
+  `startOmlEditSession` and `endOmlEditSession` → `input: { eSpaceName }`. (`omlRefreshReferences`, `omlPublish` and `getRoleExceptions` take
   `input: { eSpaceName }`; send the token to them too, even though their schemas
   don't declare it.)
 - **Summarise a module with one probe**, not one getter per element:
   `servicestudio-mcp-oml/examples/ProbeModuleInventory.cs` returns the whole inventory in a
   few thousand characters. `getDataModel` on a large module can exceed 100k. The probe
-  is a read (it throws before saving), so use it even when the user says not to change
-  anything. It isn't a Beta write.
+  throws before saving, so use it even when the user says not to change anything. It
+  still needs an edit session: start one, probe, end it, and give the Beta notice for
+  those calls. Don't probe inside a session you didn't start (SKILL.md § 2).
 - **Keep the developer's layout when you edit an existing flow.** Shift the nodes below the
   insertion point and place the new node in the gap. Use the full layout pass only on flows you
   created (SKILL.md § 3.1).
-- **Modules are addressed by name only.** `listApps` doesn't say which server or
-  environment a module came from, and each module publishes to its own server. If
-  the user has modules from several environments open, confirm which one they mean
-  (SKILL.md § 8).
+- **Address a module by its `tabId`.** Call `listOpenModules` and pass an open row's
+  `tabId` as `eSpaceName`. Its `key` or `name` also work, but one open in several tabs
+  fails with `MODULE_AMBIGUOUS`: retry with the `tabId` of the module the user means.
+  `isSelected` marks "this module"; when several rows have it, ask. The list doesn't say
+  which environment a module came from, and each module publishes to its own server
+  (SKILL.md §§ 0.1, 8).
+- **A module that isn't open:** find it with `searchApps`, and open it with `openModule`
+  (`moduleKey` = its key) only when the user's request names it. When several match, ask
+  and open nothing. When Studio's windows are logged in to several environments, both
+  fail with `ENVIRONMENT_REQUIRED`: ask the user which one and pass it as `environment`
+  to both. Use the returned `module.tabId`; on `opening`, call again with the same
+  arguments. Close the
+  modules you opened with `closeModule` when you are done, never one the user opened, and
+  tell the user before closing a merged module, because Studio will ask them to save.
+  Older builds (`listApps`) have none of these tools and address modules by `name`:
+  ask the user to open the module.
 
 ## Non-negotiable rules for `applyModelApiCode`
 
+- **Writes need an edit session.** Call `startOmlEditSession` before the first
+  `applyModelApiCode` on a module; without it the apply fails with `No OML edit session
+  is started`. A merge doesn't end the session. Call `endOmlEditSession` once the last
+  merge returned `merged: true` (SKILL.md § 2.1).
+- **Outside an edit session, read one module one call at a time.** Parallel reads can
+  fail with `OML not found: …-in.oml`; run the failed read again on its own (SKILL.md § 2).
 - The `code` arg is a **full `Action<IESpace>` lambda**: `eSpace => { … }`.
   - The parameter must be literally **`eSpace`**.
   - **Never** call `eSpace.Save(...)` — the host appends its own save.
@@ -99,11 +118,12 @@ disagree.
   crash members: `servicestudio-mcp-oml/reference/reactive-widget-api.md`.
 - **Finalise with `omlMerge`:** after the final successful mutation, call
   `omlMerge` with `input: { eSpaceName, mutatedOmlPath }` to open Service
-  Studio's Compare-and-Merge window. Skip only for read-only tasks or when
-  nothing saved.
-- **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `omlReset`, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: older Service Studio builds reject the whole merge. Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
-- **`omlRefreshReferences` drops the session pointer** — an unmerged chain
-  vanishes from reads. Refresh before starting a chain, or merge first.
+  Studio's Compare-and-Merge window, then `endOmlEditSession`. Skip the merge only for
+  read-only tasks or when nothing saved.
+- **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `endOmlEditSession` and `startOmlEditSession` again, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: older Service Studio builds reject the whole merge. Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
+- **Call `omlRefreshReferences` outside an edit session.** Inside one it ends a
+  session with unmerged edits, or leaves the working copy without the refreshed
+  references (SKILL.md § 3.2).
 - **Call `omlPublish` only when the user explicitly asks to publish.** It needs a
   write permission granted in the MCP Server dialog and returns status
   `blocked` while that is withheld.
@@ -133,7 +153,7 @@ qualified in code instead (`ServiceStudio.Plugin.NRWidgets.IInput`).
 
 ## Module styles
 
-`listApps` reports each module's `moduleType` (e.g. `"Reactive"`).
+`listOpenModules` reports each module's `moduleType` (e.g. `"Reactive"`).
 `applyModelApiCode` is style-agnostic, but for **Traditional** modules use the
 `*Traditional` read verbs (`getScreenTraditional`, etc.) and `eSpace.WebFlows`
 instead of `eSpace.MobileFlows`.
