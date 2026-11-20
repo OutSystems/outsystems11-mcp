@@ -79,7 +79,7 @@ might want back before you reset.**
 ```
 
 `eSpaceName` is **required**: an open module's `tabId`, `key` or `name` from
-`listOpenModules` (the `name` from `listApps` on older builds). See
+`listOpenModules` (the `name` from `listApps` on early contract 1 builds). See
 [`module-discovery.md`](module-discovery.md).
 
 ### Response

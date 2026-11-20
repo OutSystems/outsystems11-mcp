@@ -14,14 +14,20 @@ share https://www.outsystems.com/legal/beta-features-agreement.
 
 Do this for the request below:
 
-0. **Session.** If you don't already hold one, call `createSessionToken` once
+0. **Contract.** This skill is **written for MCP contract 2**; the first line of the server's
+   instructions names the server's (if you can't see them, `createSessionToken`'s description
+   says the same). If it's higher, offer the user the latest skill from the repository the second line names, and install
+   it only if they agree. If it's lower or missing, follow
+   `servicestudio-mcp-oml/reference/contracts.md`. On any contract, where a tool's live
+   description differs from this skill, follow the description.
+   **Session.** If you don't already hold one, call `createSessionToken` once
    and pass the token as top-level `sessionToken` on every call. Every tool
    except `listOpenModules` takes `{ "input": { … }, "sessionToken": "<token>" }`.
    Pass the module's `tabId` from `listOpenModules` as `eSpaceName` (on
    `MODULE_AMBIGUOUS`, retry with the `tabId` the user means). If the request names a
    module that isn't open, find it with `searchApps` and open it with `openModule`
    (on `ENVIRONMENT_REQUIRED`, ask the user which environment and pass it as
-   `environment` to both); close it with `closeModule` when done. Older builds (`listApps`) can't open modules:
+   `environment` to both); close it with `closeModule` when done. Early contract 1 builds (`listApps`) can't open modules:
    ask the user.
 1. **Read first.** Call `getDataModel` (and any relevant `get*` read tool, e.g.
    `getServerAction`, `getScreen` with `objectName`) with

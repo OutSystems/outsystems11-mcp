@@ -19,7 +19,7 @@ Four MCP calls, plus IDE-side finalisation. (Every call carries the `sessionToke
 
 ### Call 1 — `listOpenModules` (style detection)
 
-Always start with `listOpenModules` (`listApps` on older builds) to confirm the module style. Picking the right read verb depends on it. `listOpenModules` is the one tool whose arguments are **not** wrapped in `input`:
+Always start with `listOpenModules` (`listApps` on early contract 1 builds) to confirm the module style. Picking the right read verb depends on it. `listOpenModules` is the one tool whose arguments are **not** wrapped in `input`:
 
 **Request**:
 

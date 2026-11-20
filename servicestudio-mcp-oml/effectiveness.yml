@@ -55,6 +55,12 @@
 #     openModule when Studio is logged in to several (scenario_27).
 #     They were written from the Service Studio MCP server source, not yet
 #     verified live.
+#   - scenarios 28-31 cover the MCP contract check in SKILL.md § 0: a server
+#     newer than the skill (scenario_28, offer the install, only on a yes), a
+#     server with no contract line (scenario_29, contract 1 notes), a server
+#     on the skill's own contract (scenario_30, no offer), and a client that
+#     hides the server instructions, so only createSessionToken's description
+#     names the contract (scenario_31, offer the install, only on a yes).
 
 test_type: "effectiveness"
 name: "servicestudio-mcp-oml effectiveness"
@@ -159,7 +165,7 @@ scenario_3:
   validation:
     prerequisites:
       - point: "Names the MCP tools"
-        description: "The sequence uses `listOpenModules` (or `listApps`, its name on older builds), `getDataModel`, `applyModelApiCode` and `omlMerge` (in some sensible order), not UI clicks or REST endpoints."
+        description: "The sequence uses `listOpenModules` (or `listApps`, its name on early contract 1 builds), `getDataModel`, `applyModelApiCode` and `omlMerge` (in some sensible order), not UI clicks or REST endpoints."
 
       - point: "Shows JSON arguments per call"
         description: "Each call is shown with a concrete JSON arguments object."
@@ -172,7 +178,7 @@ scenario_3:
         description: "Every later call carries `\"sessionToken\": \"<token>\"` as a top-level argument, a sibling of `input` — not nested inside `input`, and not omitted."
 
       - point: "`listOpenModules` takes only the token, no `input`"
-        description: "The `listOpenModules` call (`listApps` on older builds) is `{ \"sessionToken\": \"<token>\" }` with no `input` wrapper, and the style is read from each row's `moduleType` field (e.g. `\"Reactive\"`). Reading a `style` field is the WRONG answer."
+        description: "The `listOpenModules` call (`listApps` on early contract 1 builds) is `{ \"sessionToken\": \"<token>\" }` with no `input` wrapper, and the style is read from each row's `moduleType` field (e.g. `\"Reactive\"`). Reading a `style` field is the WRONG answer."
 
       - point: "Every other tool wraps its arguments in `input`"
         description: "`getDataModel` is `{ \"input\": { \"eSpaceName\": \"MyModule\", \"includeJson\": \"Never\" }, \"sessionToken\": … }` and `applyModelApiCode` is `{ \"input\": { \"eSpaceName\": \"MyModule\", \"code\": \"eSpace => { … }\", \"imports\": [...] }, \"sessionToken\": … }` with all three `input` fields present. Flat arguments (e.g. `{ \"code\": …, \"imports\": … }` or `{ \"includeJson\": \"Never\" }`) are the WRONG answer."
@@ -1128,3 +1134,119 @@ scenario_27:
 
       - point: "Keeps `moduleKey` and `environment` when it calls again"
         description: "On `status: \"opening\"`, it calls `openModule` again with the same `moduleKey` and the same `environment` to keep waiting for the same opening. Calling again without `environment`, or treating `opening` as a failure, is WRONG."
+
+scenario_28:
+  name: "contract_server_newer_than_skill"
+
+  codebase:
+    files: []
+
+  prompt: |
+    You just connected to Service Studio's MCP Server. Its instructions start with:
+
+      Service Studio 11.56.3.0, MCP contract 3.
+      The servicestudio-mcp-oml skill is in https://github.com/OutSystems/outsystems11-mcp. If you have no servicestudio-mcp-oml skill, or yours doesn't say "written for MCP contract N" with N of 3 or more, tell the user and offer to install the latest version as that repository's README describes. Install it only if they agree.
+
+    The user asks you to add a `Status` text attribute to the `Order` entity of the open
+    module `Sales`. What do you do first, and how do you go on?
+
+  validation:
+    prerequisites:
+      - point: "Addresses the requested change"
+        description: "The response still plans to add the `Status` attribute to `Order`, through the MCP tools."
+
+    skill_scoring:
+      - point: "Notices the server is newer than the skill"
+        description: "The response compares the server's contract (3) with the contract the skill is written for (2) and says the skill is older than the server."
+
+      - point: "Offers the latest skill, installs only on a yes"
+        description: "The response tells the user and offers to install the latest skill from https://github.com/OutSystems/outsystems11-mcp, and does not install it, clone it or change any skill files unless the user agrees."
+
+      - point: "Trusts the live tool descriptions meanwhile"
+        description: "The response says that, until the skill is updated, where a tool's live description differs from the skill, it follows the description."
+
+scenario_29:
+  name: "contract_server_without_contract_line"
+
+  read_references:
+    - reference/contracts.md
+
+  codebase:
+    files: []
+
+  prompt: |
+    You just connected to Service Studio's MCP Server. Its instructions start with
+    "Every tool call must be authorized by a session token." and say nothing about a
+    contract. The user asks you to add a `Status` text attribute to the `Order` entity of
+    the open module `Sales`. What do you do first, and how do you go on?
+
+  validation:
+    prerequisites:
+      - point: "Addresses the requested change"
+        description: "The response still plans to add the `Status` attribute to `Order`, through the MCP tools."
+
+    skill_scoring:
+      - point: "Treats the server as contract 1"
+        description: "The response concludes that a server with no contract line is contract 1, older than the contract the skill is written for (2), and follows the contract 1 notes (reference/contracts.md)."
+
+      - point: "Goes by the live tools"
+        description: "The response checks the live tool list before relying on a tool, and where a tool's live description differs from the skill, follows the description."
+
+      - point: "Doesn't offer an older skill"
+        description: "The response does not offer to install or downgrade the skill: the skill is newer than the server, and its contract 1 notes cover it."
+
+scenario_30:
+  name: "contract_server_matches_skill"
+
+  codebase:
+    files: []
+
+  prompt: |
+    You just connected to Service Studio's MCP Server. Its instructions start with:
+
+      Service Studio 11.55.99.0, MCP contract 2.
+      The servicestudio-mcp-oml skill is in https://github.com/OutSystems/outsystems11-mcp. If you have no servicestudio-mcp-oml skill, or yours doesn't say "written for MCP contract N" with N of 2 or more, tell the user and offer to install the latest version as that repository's README describes. Install it only if they agree.
+
+    The user asks you to summarise the open module `Sales`. What do you do?
+
+  validation:
+    prerequisites:
+      - point: "Proposes a concrete approach"
+        description: "The response names the tools or code it would use to summarise the module."
+
+    skill_scoring:
+      - point: "Recognises the skill matches the server"
+        description: "The response notes that the server's contract (2) is the one the skill is written for, and carries on with the task."
+
+      - point: "No install offer and no warning"
+        description: "The response does not offer to install or update the skill and does not warn the user about a version mismatch."
+
+scenario_31:
+  name: "contract_only_in_create_session_token_description"
+
+  codebase:
+    files: []
+
+  prompt: |
+    You just connected to Service Studio's MCP Server. Your client doesn't show you the
+    server's instructions. The `createSessionToken` tool's description reads:
+
+      Asks the user to approve this agent and, once approved, returns a new session token to pass as the sessionToken argument of every other tool call. Pass 'clientName' with your own agent/application name so the user can identify who is asking. This server speaks MCP contract 3. The servicestudio-mcp-oml skill is in https://github.com/OutSystems/outsystems11-mcp. If you have no servicestudio-mcp-oml skill, or yours doesn't say "written for MCP contract N" with N of 3 or more, tell the user and offer to install the latest version as that repository's README describes. Install it only if they agree.
+
+    The user asks you to add a `Status` text attribute to the `Order` entity of the open
+    module `Sales`. What do you do first, and how do you go on?
+
+  validation:
+    prerequisites:
+      - point: "Addresses the requested change"
+        description: "The response still plans to add the `Status` attribute to `Order`, through the MCP tools."
+
+    skill_scoring:
+      - point: "Reads the contract from createSessionToken's description"
+        description: "The response takes the server's contract (3) from `createSessionToken`'s description, because the client shows no server instructions. Concluding contract 1 because the instructions are missing is the WRONG answer."
+
+      - point: "Notices the server is newer than the skill"
+        description: "The response compares the server's contract (3) with the contract the skill is written for (2) and says the skill is older than the server."
+
+      - point: "Offers the latest skill, installs only on a yes"
+        description: "The response tells the user and offers to install the latest skill from https://github.com/OutSystems/outsystems11-mcp, and does not install it, clone it or change any skill files unless the user agrees."

@@ -18,7 +18,8 @@ Use the tool names the server advertises in its tool list.
 | The server advertises | What it means |
 |---|---|
 | `listOpenModules`, `searchApps`, `openModule`, `closeModule` | Everything below applies. A `listApps` call fails as an unknown tool. |
-| `listApps` | An older build. `listApps` is the same open-module list, with rows under `apps` instead of `modules`. When its rows carry `tabId`, address modules as below. When they don't, address them by `name`. There is no way to search or open a module: ask the user to open it in Service Studio. |
+| `listOpenModules` and `searchApps`, but no `openModule` | A later contract 1 build ([`contracts.md`](contracts.md)). Choose and search for modules as below, but there is no way to open or close one: ask the user to open it in Service Studio. |
+| `listApps` | An early contract 1 build ([`contracts.md`](contracts.md)). `listApps` is the same open-module list, with rows under `apps` instead of `modules`. When its rows carry `tabId`, address modules as below. When they don't, address them by `name`. There is no way to search or open a module: ask the user to open it in Service Studio. |
 
 The server's own instructions say the same: where guidance says `listApps` for the
 open modules, call `listOpenModules`.

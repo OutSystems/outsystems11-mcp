@@ -13,7 +13,7 @@ working on a Reactive / Mobile module.
 
 ## When does this apply
 
-Call `listOpenModules` first (`listApps` on older builds). If the module you care about has `moduleType`
+Call `listOpenModules` first (`listApps` on early contract 1 builds). If the module you care about has `moduleType`
 equal to `"Traditional"` or `"TraditionalLibrary"`, the patterns in
 this file apply. For `"Reactive"`, `"Mobile"`, or their library
 variants, use the Mobile-/Reactive-shaped recipes in

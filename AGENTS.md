@@ -27,8 +27,15 @@ read the one that fits the task; don't load them all at once. The rules below ar
 condensed restatement of `SKILL.md`, which is the source of truth if the two ever
 disagree.
 
-## Session token and argument envelope
+## Contract check, session token and argument envelope
 
+- **Check the MCP contract first.** This skill is **written for MCP contract 2**. The first
+  line of the server's instructions says `Service Studio <version>, MCP contract <N>.` If N is
+  higher, the second line says where to get the latest skill: tell the user, offer to install
+  it, and install it only if they agree. If N is lower or the line is missing (contract 1),
+  follow `servicestudio-mcp-oml/reference/contracts.md`. On any contract, where a tool's live
+  description differs from this skill, follow the description. If you can't see the instructions,
+  `createSessionToken`'s description says the same; neither saying anything means contract 1.
 - **Call `createSessionToken` exactly once, first** (`{ "clientName": "…" }`).
   The user approves a dialog in Service Studio; the result text is the token.
   The call waits for that approval with no signal to you, so tell the user to
@@ -37,7 +44,7 @@ disagree.
   reconnects — never request a second one.
 - **Every tool except `listOpenModules` wraps its arguments in `input`:**
   `{ "input": { … }, "sessionToken": "<token>" }`. `listOpenModules` (`listApps`
-  on older builds) is just `{ "sessionToken": "<token>" }`. There is no flat shape. Examples:
+  on early contract 1 builds) is just `{ "sessionToken": "<token>" }`. There is no flat shape. Examples:
   `applyModelApiCode` → `input: { eSpaceName, code, imports }` (all three
   required); `omlMerge` → `input: { eSpaceName, mutatedOmlPath }`; `omlReset`,
   `startOmlEditSession` and `endOmlEditSession` → `input: { eSpaceName }`. (`omlRefreshReferences`, `omlPublish` and `getRoleExceptions` take
@@ -66,8 +73,8 @@ disagree.
   arguments. Close the
   modules you opened with `closeModule` when you are done, never one the user opened, and
   tell the user before closing a merged module, because Studio will ask them to save.
-  Older builds (`listApps`) have none of these tools and address modules by `name`:
-  ask the user to open the module.
+  Early contract 1 builds (`listApps`) have none of these tools and address modules by `name`:
+  ask the user to open the module. Later contract 1 builds: `servicestudio-mcp-oml/reference/contracts.md`.
 
 ## Non-negotiable rules for `applyModelApiCode`
 
@@ -120,7 +127,7 @@ disagree.
   `omlMerge` with `input: { eSpaceName, mutatedOmlPath }` to open Service
   Studio's Compare-and-Merge window, then `endOmlEditSession`. Skip the merge only for
   read-only tasks or when nothing saved.
-- **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `endOmlEditSession` and `startOmlEditSession` again, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: older Service Studio builds reject the whole merge. Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
+- **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `endOmlEditSession` and `startOmlEditSession` again, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: contract 1 builds can reject the whole merge (`servicestudio-mcp-oml/reference/contracts.md`). Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
 - **Call `omlRefreshReferences` outside an edit session.** Inside one it ends a
   session with unmerged edits, or leaves the working copy without the refreshed
   references (SKILL.md § 3.2).

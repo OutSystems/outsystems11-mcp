@@ -49,7 +49,7 @@ Verified live against Service Studio 11 on 2026-09-30.
 
 ```jsonc
 { "input": { "eSpaceName": "MyModule", "includeJson": "Never" }, "sessionToken": "<token>" }   // getDataModel
-{ "sessionToken": "<token>" }                                                                // listOpenModules (listApps on older builds)
+{ "sessionToken": "<token>" }                                                                // listOpenModules (listApps on early contract 1 builds)
 ```
 
 The old flat shape (`{ "eSpaceName": …, … }` at top level) no longer deserializes.
@@ -61,7 +61,7 @@ The old flat shape (`{ "eSpaceName": …, … }` at top level) no longer deseria
 `name` of a `listOpenModules` row with `isOpen: true`, tried in that order. Prefer the
 `tabId`. A key or name open in several tabs fails with `MODULE_AMBIGUOUS` (the message
 lists each candidate's `tabId`); a value that matches no open module fails with
-`MODULE_NOT_LOADED`. Older builds take the `name` from `listApps`. Details:
+`MODULE_NOT_LOADED`. Early contract 1 builds take the `name` from `listApps`. Details:
 [`module-discovery.md`](module-discovery.md). To keep
 the Args columns below scannable, neither `eSpaceName` nor the `input` / `sessionToken`
 envelope is repeated in every row — assume they're always there.
@@ -275,7 +275,7 @@ namespaces define an `IExternalSite`).
 | Tool | Args | Returns |
 |---|---|---|
 | `createSessionToken` | `clientName?` (top level, no `input`) | the token string — call once per agent session (see "Session token" above) |
-| `listOpenModules` | only `sessionToken` | `{ modules: [{ key, tabId?, isSelected?, name, kind:"eSpace", version, description, isOpen, isReference, moduleType }] }` — one row per open tab, plus the loaded references (no `tabId` / `isSelected`). `key` is the module's own key, stable across reopens; `tabId` names the tab; `isSelected` marks the tab in front of its window. `moduleType` (formerly `style`) ∈ `Reactive`, `Mobile`, `Traditional`, `ReactiveLibrary`, `MobileLibrary`, `TraditionalLibrary`, `Service`, `Unknown` (see [`../SKILL.md`](../SKILL.md) § 4.1). **Older builds call it `listApps`** and return the rows under `apps` |
+| `listOpenModules` | only `sessionToken` | `{ modules: [{ key, tabId?, isSelected?, name, kind:"eSpace", version, description, isOpen, isReference, moduleType }] }` — one row per open tab, plus the loaded references (no `tabId` / `isSelected`). `key` is the module's own key, stable across reopens; `tabId` names the tab; `isSelected` marks the tab in front of its window. `moduleType` ∈ `Reactive`, `Mobile`, `Traditional`, `ReactiveLibrary`, `MobileLibrary`, `TraditionalLibrary`, `Service`, `Unknown` (see [`../SKILL.md`](../SKILL.md) § 4.1). **Early contract 1 builds call it `listApps`** and return the rows under `apps` |
 | `searchApps` | optional `input: { search?, application?, moduleType?, environment? }` | `{ environment, apps: [{ key?, name?, modules: [{ key, name, moduleType, lastChangedBy?, lastChangedAt?, isOpen, tabIds? }] }], hasMore, message }` — the modules of the environment Studio is logged in to, open or not, grouped by application. At most 50 modules, as whole applications; `hasMore` + `message` name what was left out. Narrow, don't page. `ENVIRONMENT_REQUIRED` when Studio's windows are logged in to several environments and no `environment` was passed: ask the user which one. `NOT_LOGGED_IN` / `SERVER_REQUEST_FAILED` on other failures ([`module-discovery.md`](module-discovery.md)) |
 | `openModule` | `input: { moduleKey, environment?, waitSeconds? }` (no `eSpaceName`) | `{ status: "opened"\|"alreadyOpen"\|"opening"\|"notOpened", message, module?, inNewWindow? }` — opens a module `searchApps` lists, by its key, in a new tab without moving the developer. Pass the `environment` you passed to `searchApps`, if any; without it, several logged-in environments fail with `ENVIRONMENT_REQUIRED`. `module` is the tab's `listOpenModules` row: pass `module.tabId` as `eSpaceName`. On `opening`, call again with the same `moduleKey` and `environment`. Only for a module the user's request names ([`module-discovery.md`](module-discovery.md)) |
 | `closeModule` | `input: { eSpaceName, closeEmptyWindow?, waitSeconds? }` | `{ status: "closed"\|"closing"\|"notClosed", message, changes?: "saved"\|"discarded", emptyWindow?: "closed"\|"leftOpen" }` — closes a tab this session opened with `openModule`; refuses any other. Unsaved changes make Studio ask the developer; on `closing`, call again with the same `eSpaceName`. Pass `closeEmptyWindow` only with the user's answer, after it asked ([`module-discovery.md`](module-discovery.md)) |

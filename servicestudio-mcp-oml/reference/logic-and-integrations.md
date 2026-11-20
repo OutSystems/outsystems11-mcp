@@ -309,8 +309,8 @@ filters on `Error` will miss it.
   `Part → PartInventory → ReorderAlert` plus a direct `Part → ReorderAlert`.
   TrueChange shows 0 errors. Fix: set one of the paths to `Ignore`.
 - **`Record List To Excel` output** can't be referenced (SKILL.md § 8). Export CSV instead.
-- **`Theme.IconLibrary`** is accepted by the sidecar, but older Service Studio builds
-  reject the merge (SKILL.md § 3.1). Don't set it. Theme stylesheet edits merge and
+- **`Theme.IconLibrary`** is accepted by the sidecar, but contract 1 builds
+  can reject the merge (SKILL.md § 3.1, [`contracts.md`](contracts.md)). Don't set it. Theme stylesheet edits merge and
   publish fine without it; the sidecar's `InvalidIconLibrary` error can be ignored.
 - **Expression-type traps that TrueChange does flag, but are easy to hit:**
   - Comparing `Date` with `DateTime`: wrap with `DateTimeToDate(...)`.

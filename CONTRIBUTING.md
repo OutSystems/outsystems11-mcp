@@ -170,6 +170,31 @@ together in the same PR:
   opens `SKILL.md`), so a stale adapter silently teaches an obsolete contract to a
   whole tool. See ARCHITECTURE.md T6.
 
+**When Service Studio reports a new MCP contract number.** Service Studio states its
+contract number on the first line of its server instructions, and its second line points
+agents to the public `OutSystems/outsystems11-mcp`, which this repository's `main` syncs to. Move
+the skill to a new number in one PR:
+
+- `SKILL.md`'s `description` and § 0, and every adapter, say "written for MCP contract N" word for word:
+  Service Studio checks for that phrase;
+- [`reference/contracts.md`](servicestudio-mcp-oml/reference/contracts.md) gets a section for the
+  previous contract: what it does differently from N, so the skill keeps working with older
+  Service Studio releases;
+- the README's "Service Studio and skill versions" table gets a row;
+- `effectiveness.yml` covers what changed, and the contract-check scenarios (`scenario_28` to
+  `scenario_31`) move to the new number: they quote the server instructions or
+  `createSessionToken`'s description, and score "written for contract 2".
+
+Merge it **before the Service Studio release that reports N ships**: that release's instructions
+send agents to `OutSystems/outsystems11-mcp`, which only has what `main` here has synced to it.
+Every Service Studio release gets the skill from that `main`, so keep the notes for older contracts.
+Once that release ships:
+
+- put its version in the README table's row for N, and the first version of each other release
+  line that picks up N;
+- tag the commit that moved the skill to N as `contract-N`, and push the tag. It stays in this
+  repository: the sync to `OutSystems/outsystems11-mcp` carries `main` only.
+
 ## Useful Commands
 
 | Command | Description |

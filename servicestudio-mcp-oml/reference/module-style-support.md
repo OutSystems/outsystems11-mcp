@@ -3,13 +3,12 @@
 OutSystems 11 modules come in three UI flavours — **Reactive Web**,
 **Mobile**, and **Traditional Web** — plus Service / Library variants. The
 in-process MCP Server surfaces the module's style on every `listOpenModules` row
-(`listApps` on older builds) and every `searchApps` module, via a `moduleType` field
-(called `style` in older builds).
+(`listApps` on early contract 1 builds) and every `searchApps` module, via a `moduleType` field.
 
 ## Detecting the style
 
 ```jsonc
-// listOpenModules response (older builds: listApps, with the rows under "apps")
+// listOpenModules response (early contract 1 builds: listApps, with the rows under "apps")
 {
   "modules": [
     {

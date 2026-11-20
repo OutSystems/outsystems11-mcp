@@ -44,7 +44,7 @@ Once per agent session, before anything else. Service Studio shows an approval d
 <token>
 ```
 
-Every call below passes it as the top-level `sessionToken` argument, and every tool except `listOpenModules` (`listApps` on older builds) wraps its own arguments in an `input` object.
+Every call below passes it as the top-level `sessionToken` argument, and every tool except `listOpenModules` (`listApps` on early contract 1 builds) wraps its own arguments in an `input` object.
 
 ### Call 1 — `getDataModel`
 

@@ -17,4 +17,5 @@ Note the distinction: working **on** this repo means editing the skill content. 
 
 - **Do not hand-edit `docs/*.Generated.cs` or `docs/BuiltinFunctions.Generated.json`** — they are reflected from the live `OutSystems.Model.V1` assembly. Regenerate via `servicestudio-mcp-oml/generation/README.md`.
 - A contract change is never a one-file edit: keep SKILL.md, the relevant `reference/` file(s), any affected `integration-examples/` transcript, the matching `effectiveness.yml` `scenario_*` points, **and the harness adapters that restate the contract** (`AGENTS.md`, `.github/copilot-instructions.md`, `.github/chatmodes/*.chatmode.md`, `.github/prompts/*.prompt.md`) in sync in the same change (see CONTRIBUTING.md "Development Workflow" and "Pull Request Process").
+- The skill is written for one MCP contract number (SKILL.md § 0, `reference/contracts.md`). Moving it to a new number has its own checklist and release step: CONTRIBUTING.md "When Service Studio reports a new MCP contract number".
 - Tool names are exact host camelCase (`applyModelApiCode`, `getDataModel`, `omlMerge`, …). The old `oml_`-prefixed snake_case names no longer exist — never reintroduce them.

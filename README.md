@@ -111,7 +111,7 @@ This registers an HTTP MCP server named `servicestudio`, across every project an
 
 ### 4. Add the skill to Claude Code
 
-Clone this repository and run the installer for your platform. It copies `servicestudio-mcp-oml/` into your Claude Code skills directory (`%USERPROFILE%\.claude\skills\` on Windows, or` ~/.claude/skills/` on macOS/Linux), overwriting any existing copy. Re-run the same command any time to update to the latest version.
+Clone this repository and run the installer for your platform. It copies `servicestudio-mcp-oml/` into your Claude Code skills directory (`%USERPROFILE%\.claude\skills\` on Windows, or` ~/.claude/skills/` on macOS/Linux), overwriting any existing copy. Re-run the same command any time to update to the latest version. If your Service Studio is newer than your copy of the skill, your agent offers to update it for you: see [Service Studio and skill versions](#service-studio-and-skill-versions).
 
 ```
 git clone https://github.com/OutSystems/outsystems11-mcp.git
@@ -149,6 +149,19 @@ Start a new Claude Code session, with a Reactive module open in Service Studio, 
 If you get a summary back, you're ready.
 
 > **Good to know:** your coding agent reaches its model over the network. Everything else — the MCP server and your application model — runs locally in your environment.
+
+## Service Studio and skill versions
+
+Service Studio's MCP server has a **contract number**, which goes up whenever this skill has to change to keep up with it. When your agent connects, the server tells it its contract number and where to get this skill. If your copy of the skill is written for an older contract, the agent tells you and offers to install the latest; it installs it only if you agree. To do it yourself in Claude Code, re-run [step 4](#4-add-the-skill-to-claude-code). On any other agent, follow its setup guide in [Using other coding agents](#using-other-coding-agents) again, adapter files included: the install scripts only update Claude Code.
+
+| MCP contract | First Service Studio version |
+| --- | --- |
+| 1 | 11.55.91 |
+| 2 | The next Service Studio release (version added once it ships) |
+
+Your Service Studio's MCP server names its contract when your agent connects. One that names none speaks contract 1.
+
+The latest skill is written for the newest contract, and still works with older Service Studio releases: it carries notes for each older contract.
 
 ## Using other coding agents
 

@@ -13,8 +13,8 @@ description: >-
   tools. Use when calling `applyModelApiCode`, working with the Service Studio
   MCP oml tools, editing an open module via Service Studio MCP, editing or
   modifying `.oml`, writing Model API code, or asking to add an entity /
-  attribute via the Model API. Not for runtime OutSystems platform debugging —
-  strictly design-time OML mutation through the Model API.
+  attribute via the Model API. Not for runtime OutSystems platform debugging:
+  design-time only. This skill is written for MCP contract 2.
 ---
 
 # OutSystems Model API for `applyModelApiCode`
@@ -44,7 +44,7 @@ differs from ODC's published examples in one important way (see § 1).
 ## Contents
 
 - [When to Use](#when-to-use)
-- [§ 0 — Session token and argument envelope](#0-session-token-and-argument-envelope)
+- [§ 0 — Contract check, session token and argument envelope](#0-contract-check-session-token-and-argument-envelope)
 - [§ 0.1 — Choosing the module: `eSpaceName`, opening and closing](#01-choosing-the-module-espacename-opening-and-closing)
 - [§ 1 — The full-lambda contract](#1-the-full-lambda-contract--read-this-first)
 - [§ 1.1 — The code sandbox](#11-the-code-sandbox)
@@ -86,7 +86,23 @@ differs from ODC's published examples in one important way (see § 1).
 - ODC-side OML editing — those tools wrap differently and surface a
   different verb catalogue.
 
-## 0. Session token and argument envelope
+## 0. Contract check, session token and argument envelope
+
+**This skill is written for MCP contract 2.** The first line of the server's instructions names the
+server's contract: `Service Studio <version>, MCP contract <N>.` Compare it with 2:
+
+- **2:** carry on.
+- **Higher than 2:** the server is newer than this skill. The second line of its instructions says
+  where to get the latest skill: tell the user, offer to install it, and install it only if they
+  agree. The new skill only loads in a new session.
+- **Lower than 2, or no contract line** (contract 1): follow that contract's notes in
+  [`reference/contracts.md`](reference/contracts.md).
+
+On any contract, where a tool's live description differs from this skill, follow the description.
+
+If your client doesn't show you the server's instructions, `createSessionToken`'s description says
+the same (`This server speaks MCP contract <N>.`, then the skill pointer). Neither saying anything
+means contract 1.
 
 1. **Call `createSessionToken` once, first**, passing `clientName` (your agent's
    name — shown to the user in Service Studio's approval dialog). The result is a
@@ -103,7 +119,7 @@ differs from ODC's published examples in one important way (see § 1).
 ```jsonc
 // applyModelApiCode
 { "input": { "eSpaceName": "MyModule", "code": "eSpace => { … }", "imports": [] }, "sessionToken": "<token>" }
-// listOpenModules (listApps on older builds): the only tool with no input object
+// listOpenModules (listApps on early contract 1 builds): the only tool with no input object
 { "sessionToken": "<token>" }
 ```
 
@@ -111,11 +127,12 @@ Full per-tool shapes: [`reference/verb-reference.md`](reference/verb-reference.m
 
 ## 0.1 Choosing the module: `eSpaceName`, opening and closing
 
-Use the tool names the server advertises. **Older Service Studio builds** list the open
+Use the tool names the server advertises. **Early contract 1 builds** list the open
 modules with `listApps` (rows under `apps`) instead of `listOpenModules`, and have no
 `searchApps`, `openModule` or `closeModule`. There, address a module by its row's
 `tabId` when rows carry one, otherwise by `name`, and ask the user to open any module
-that isn't open.
+that isn't open. Later contract 1 builds have some of these tools: see
+[`reference/contracts.md`](reference/contracts.md).
 
 1. **Call `listOpenModules`** and pass an open row's **`tabId`** as `eSpaceName`. Its
    `key` (stable across reopens) or `name` also work. A key or name open in several tabs
@@ -292,7 +309,7 @@ or the edit needs detail. A module summary built from one getter per element too
 | `getSerializedObject` / `getSerializedObjectByKey` / `getSerializedObjectByNameAndType` | Raw JSON serialization of an object (by current pointer, by key, or by name + fully-qualified type) |
 | `runQuery` | Generic ModelQL query against the eSpace — use when no specific read tool fits. Query always starts with `Root { … }` |
 | `getValidationMessages` | TrueChange validation messages against the current pointer's OML; optional `filter` of `info` / `warning` / `error` |
-| `listOpenModules` | The open modules (one row per tab, with `tabId`) + their loaded references, each with `moduleType` (see § 4.1). `listApps` on older builds |
+| `listOpenModules` | The open modules (one row per tab, with `tabId`) + their loaded references, each with `moduleType` (see § 4.1). `listApps` on early contract 1 builds |
 | `searchApps` | The environment's modules, open or not, grouped by application (§ 0.1) |
 
 Without an edit session, read tools snapshot the live module and reuse that
@@ -590,8 +607,8 @@ with another apply, merge the new `mutatedOmlPath`. See
 > 3. Re-apply the changes, without whatever caused the failure.
 > 4. Merge the new `mutatedOmlPath`.
 >
-> **Known cause (verified 2026-10-01):** setting `IMobileTheme.IconLibrary`. Older
-> Service Studio builds reject the whole merge with *"Update Service Studio to merge
+> **Known cause (verified 2026-10-01):** setting `IMobileTheme.IconLibrary`. Contract 1
+> builds ([`reference/contracts.md`](reference/contracts.md)) can reject the whole merge with *"Update Service Studio to merge
 > the module. The feature Theme Icon Library is not supported in this version."*
 > The trap: editing `Theme.StyleSheet` makes the sidecar report an `InvalidIconLibrary`
 > error ("Allowed libraries are: FontAwesome4.0, Phosphor2.0"), and setting
@@ -685,7 +702,7 @@ Their schemas don't declare `sessionToken`; send it anyway (§ 0):
   explicitly asks to publish** — never as an automatic closing step.
   Verified 2026-10-03: it publishes the **live** module (merge first; an unmerged chain is not
   published), it requires the session token, and it fails at once if the module isn't open
-  (`MODULE_NOT_LOADED`; older builds say "Module 'X' is not open in Service Studio. Open it
+  (`MODULE_NOT_LOADED`; early contract 1 builds say "Module 'X' is not open in Service Studio. Open it
   before calling omlPublish."). A clean
   publish of a small module took 16 s and returned
   `{ "published": true, "status": "success", "reason": "", "messages": ["Uploading", "Compiling", "Deploying", "Done"] }`.
@@ -720,8 +737,8 @@ accepted** (§ 1.1): never pass `System`, `System.Linq` (already pre-imported) o
 OutSystems 11 modules come in three UI flavours — **Reactive Web**,
 **Mobile**, and **Traditional Web** — plus Service / Library variants. The
 in-process MCP Server surfaces the module's style on every `listOpenModules` row
-(`listApps` on older builds) and every `searchApps` module
-via a `moduleType` field (formerly `style`; values such as `Reactive`, `Mobile`,
+(`listApps` on early contract 1 builds) and every `searchApps` module
+via a `moduleType` field (values such as `Reactive`, `Mobile`,
 `Traditional`, `ReactiveLibrary`, `MobileLibrary`, `TraditionalLibrary`,
 `Service`, `Unknown` — `Reactive` verified live 2026-09-30).
 
@@ -769,7 +786,8 @@ O11 BPT use [`examples/AddProcessWithHumanActivity.cs`](examples/AddProcessWithH
 | Naming gotchas (eSpace vs Module, IMobile* vs UI, Signature types) | [`reference/model-api-tips.md`](reference/model-api-tips.md) |
 | Model API namespace catalogue | [`reference/model-api-summary.md`](reference/model-api-summary.md) |
 | MCP tool surface (`applyModelApiCode`, the `get*` read tools, `runQuery`, `listOpenModules`, `getValidationMessages`, host-only `omlReset` + `omlMerge`) | [`reference/verb-reference.md`](reference/verb-reference.md) |
-| Choosing `eSpaceName` (`tabId` / `key` / `name`, `MODULE_AMBIGUOUS`), `listOpenModules`, `searchApps`, `openModule` / `closeModule` statuses, waits and refusals, older builds' `listApps` | [`reference/module-discovery.md`](reference/module-discovery.md) |
+| Choosing `eSpaceName` (`tabId` / `key` / `name`, `MODULE_AMBIGUOUS`), `listOpenModules`, `searchApps`, `openModule` / `closeModule` statuses, waits and refusals, early contract 1 builds' `listApps` | [`reference/module-discovery.md`](reference/module-discovery.md) |
+| MCP contract numbers, and what differs on a server older than this skill's contract | [`reference/contracts.md`](reference/contracts.md) |
 | Session pointer mechanics, `omlReset`, `omlMerge`, `mutatedOmlPath` | [`reference/mcp-session-pointer.md`](reference/mcp-session-pointer.md) |
 | Module style detection payload, full `*Traditional` verb table, Reactive-vs-Traditional interface mapping | [`reference/module-style-support.md`](reference/module-style-support.md) |
 | Lambda sketches per element type (entity, attribute, action, screen, node positioning); **grouped-aggregate reference-by-alias trap**; **silent renames**, default nodes per action kind, screen access (Anonymous role, role gating) | [`reference/patterns-by-element.md`](reference/patterns-by-element.md) |
@@ -846,8 +864,8 @@ Current gaps:
   including `ExcelFile`, and with a default-named node (verified 2026-10-01).
   Generate CSV text in a server action and download it from the client instead.
   Excel opens it directly.
-- **Theme Icon Library** cannot be set on older Service Studio builds, because
-  the merge is rejected (§ 3.1). You don't need to set it: theme stylesheet edits
+- **Theme Icon Library** cannot be set on contract 1 builds, because
+  the merge can be rejected (§ 3.1, [`reference/contracts.md`](reference/contracts.md)). You don't need to set it: theme stylesheet edits
   merge and publish fine with `IconLibrary` left null.
 - **Edits to a non-empty block or screen stylesheet are not reliably published.**
   This does not apply to the theme stylesheet: theme edits published 3 times out of 3.
@@ -954,7 +972,7 @@ Quick checklist (each already covered in detail above):
   saved-but-invalid even though the run looked clean. It's a structured array;
   don't substring-match it for `(Error)` (§ 3).
 - Retrying `omlMerge` after `merged:false` without asking what Service Studio's
-  dialog said, or setting `Theme.IconLibrary`, which makes older Service Studio
+  dialog said, or setting `Theme.IconLibrary`, which can make contract 1
   builds reject the merge (§ 3.1).
 - Using an ambiguous short name. `IStartNode`, `IEndNode`, `IScreenAction`,
   `IScreenAggregate` and `IDataAction` each exist in more than one imported

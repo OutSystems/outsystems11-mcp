@@ -14,14 +14,21 @@ Full contract and reference material live in **`servicestudio-mcp-oml/`**. Consu
 (read the one that fits the task; don't load them all). The rules below are a
 condensed restatement; `SKILL.md` wins if they ever disagree.
 
-## Session token and argument envelope
+## Contract check, session token and argument envelope
 
+- **Check the MCP contract first.** This skill is **written for MCP contract 2**. The first
+  line of the server's instructions says `Service Studio <version>, MCP contract <N>.` If N is
+  higher, the second line says where to get the latest skill: tell the user, offer to install
+  it, and install it only if they agree. If N is lower or the line is missing (contract 1),
+  follow `servicestudio-mcp-oml/reference/contracts.md`. On any contract, where a tool's live
+  description differs from this skill, follow the description. If you can't see the instructions,
+  `createSessionToken`'s description says the same; neither saying anything means contract 1.
 - **Call `createSessionToken` exactly once, first** (`{ "clientName": "…" }`;
   the user approves a dialog; the result text is the token). Pass it as a
   top-level `sessionToken` on every later call; reuse it, never request another.
 - **Every tool except `listOpenModules` wraps its arguments in `input`:**
   `{ "input": { … }, "sessionToken": "<token>" }`; `listOpenModules` (`listApps` on
-  older builds) is just `{ "sessionToken": "<token>" }`. `applyModelApiCode` →
+  early contract 1 builds) is just `{ "sessionToken": "<token>" }`. `applyModelApiCode` →
   `input: { eSpaceName, code, imports }` (all required); `omlMerge` →
   `input: { eSpaceName, mutatedOmlPath }`; `omlReset`, `startOmlEditSession` and
   `endOmlEditSession` → `input: { eSpaceName }`.
@@ -31,8 +38,8 @@ condensed restatement; `SKILL.md` wins if they ever disagree.
   only when the user names it (ask when several match). On `ENVIRONMENT_REQUIRED`, ask
   the user which environment and pass it as `environment` to both. Close what you opened with
   `closeModule`, never a module the user opened; before closing a merged module, tell
-  the user Studio will ask them to save. Older builds (`listApps`) have none of these
-  tools: ask the user to open the module (SKILL.md § 0.1).
+  the user Studio will ask them to save. Early contract 1 builds (`listApps`) have none of these
+  tools: ask the user to open the module (SKILL.md § 0.1, `servicestudio-mcp-oml/reference/contracts.md`).
 - **Summarise a module with one probe**
   (`servicestudio-mcp-oml/examples/ProbeModuleInventory.cs`), not one getter per element.
   The probe throws before saving, so use it even when asked not to change anything. It still
@@ -88,7 +95,7 @@ condensed restatement; `SKILL.md` wins if they ever disagree.
   `omlMerge` with `input: { eSpaceName, mutatedOmlPath }` to open Service
   Studio's Compare-and-Merge window, then `endOmlEditSession`. Skip the merge only for
   read-only tasks or when nothing saved.
-- **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `endOmlEditSession` and `startOmlEditSession` again, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: older Service Studio builds reject the whole merge. Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
+- **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `endOmlEditSession` and `startOmlEditSession` again, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: contract 1 builds can reject the whole merge (`servicestudio-mcp-oml/reference/contracts.md`). Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
 - **Call `omlRefreshReferences` outside an edit session** — inside one it ends a
   session with unmerged edits, or leaves the working copy without the refreshed
   references (SKILL.md § 3.2). **`omlPublish` only when
