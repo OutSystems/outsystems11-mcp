@@ -32,7 +32,7 @@ description differs from this skill, trust the description. They come in three t
 | --- | --- | --- |
 | `listApps` | **Early contract 1 builds**: before 11.55.98.65437 | Everything in [Early contract 1 builds](#early-contract-1-builds) |
 | `listOpenModules` and `searchApps`, but no `openModule` | From 11.55.98.65437 | No way to open or close a module: ask the user to open it in Service Studio |
-| `listOpenModules`, `searchApps`, `openModule` and `closeModule` | From 11.55.99.65452 | The module tools work as this skill describes |
+| `listOpenModules`, `searchApps`, `openModule` and `closeModule` | From 11.55.99.65452 | The module tools work as this skill describes, plus reference rows (see below) |
 
 What to do with each tool set: [`module-discovery.md`](module-discovery.md) § "Which tools your
 Service Studio has".
@@ -40,6 +40,10 @@ Service Studio has".
 On any contract 1 build, a merge that sets `Theme.IconLibrary` can fail with *"Update Service
 Studio to merge the module. The feature Theme Icon Library is not supported in this version."*
 Never set it ([`SKILL.md`](../SKILL.md) § 3.1).
+
+On any contract 1 build, `listOpenModules` (`listApps` on early builds) can also return rows
+with `isReference: true`. They are other modules Service Studio has loaded, not the open module's
+references: don't use them.
 
 ### Early contract 1 builds
 

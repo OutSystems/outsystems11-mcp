@@ -39,7 +39,6 @@ Always start with `listOpenModules` (`listApps` on early contract 1 builds) to c
       "name": "FloorPlan",
       "kind": "eSpace",
       "isOpen": true,
-      "isReference": false,
       "moduleType": "Traditional"
     }
   ]

@@ -137,9 +137,8 @@ that isn't open. Later contract 1 builds have some of these tools: see
 1. **Call `listOpenModules`** and pass an open row's **`tabId`** as `eSpaceName`. Its
    `key` (stable across reopens) or `name` also work. A key or name open in several tabs
    fails with `MODULE_AMBIGUOUS`, whose message lists each candidate's `tabId`. Retry
-   with one of them; don't guess. Reference rows are never accepted. `isSelected` marks
-   the tab in front of each Studio window, which is "this module". When several rows
-   have it, ask the user which one.
+   with one of them; don't guess. `isSelected` marks the tab in front of each Studio
+   window, which is "this module". When several rows have it, ask the user which one.
 2. **Not open?** `searchApps` (`input: { search, application, moduleType, environment }`,
    all optional) searches the environment Service Studio is logged in to, grouped by
    application. It returns at most 50 modules: narrow the search rather than paging.
@@ -309,7 +308,7 @@ or the edit needs detail. A module summary built from one getter per element too
 | `getSerializedObject` / `getSerializedObjectByKey` / `getSerializedObjectByNameAndType` | Raw JSON serialization of an object (by current pointer, by key, or by name + fully-qualified type) |
 | `runQuery` | Generic ModelQL query against the eSpace — use when no specific read tool fits. Query always starts with `Root { … }` |
 | `getValidationMessages` | TrueChange validation messages against the current pointer's OML; optional `filter` of `info` / `warning` / `error` |
-| `listOpenModules` | The open modules (one row per tab, with `tabId`) + their loaded references, each with `moduleType` (see § 4.1). `listApps` on early contract 1 builds |
+| `listOpenModules` | The open modules (one row per tab, with `tabId`), each with `moduleType` (see § 4.1). `listApps` on early contract 1 builds |
 | `searchApps` | The environment's modules, open or not, grouped by application (§ 0.1) |
 
 Without an edit session, read tools snapshot the live module and reuse that

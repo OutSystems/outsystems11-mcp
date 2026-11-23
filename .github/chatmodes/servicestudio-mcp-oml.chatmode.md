@@ -196,7 +196,7 @@ Write plugin types fully qualified in code instead
 
 ## 6. Module styles
 
-`listOpenModules` rows are `{ key, tabId, isSelected, name, kind, version, description, isOpen, isReference, moduleType }`;
+`listOpenModules` rows are `{ key, tabId, isSelected, name, kind, version, description, isOpen, moduleType }`;
 `moduleType` is e.g. `Reactive`, `Mobile`, `Traditional`. `applyModelApiCode` is style-agnostic, but a
 few **read** verbs are Mobile-bound — for Traditional modules use the
 `*Traditional` variants (`getScreenTraditional`, `getWebBlockTraditional`, …).

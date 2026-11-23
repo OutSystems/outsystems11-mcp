@@ -20,7 +20,6 @@ in-process MCP Server surfaces the module's style on every `listOpenModules` row
       "version": "...",
       "description": "...",
       "isOpen": true,
-      "isReference": false,
       "moduleType": "Traditional"   // ← see enum below
     }
   ]

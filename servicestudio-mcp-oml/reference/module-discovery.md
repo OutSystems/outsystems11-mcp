@@ -17,12 +17,16 @@ Use the tool names the server advertises in its tool list.
 
 | The server advertises | What it means |
 |---|---|
-| `listOpenModules`, `searchApps`, `openModule`, `closeModule` | Everything below applies. A `listApps` call fails as an unknown tool. |
-| `listOpenModules` and `searchApps`, but no `openModule` | A later contract 1 build ([`contracts.md`](contracts.md)). Choose and search for modules as below, but there is no way to open or close one: ask the user to open it in Service Studio. |
-| `listApps` | An early contract 1 build ([`contracts.md`](contracts.md)). `listApps` is the same open-module list, with rows under `apps` instead of `modules`. When its rows carry `tabId`, address modules as below. When they don't, address them by `name`. There is no way to search or open a module: ask the user to open it in Service Studio. |
+| `listOpenModules`, `searchApps`, `openModule`, `closeModule` | Everything below applies, plus reference rows on a contract 1 build (see below the table). A `listApps` call fails as an unknown tool. |
+| `listOpenModules` and `searchApps`, but no `openModule` | A later contract 1 build ([`contracts.md`](contracts.md)), with reference rows (see below the table). Choose and search for modules as below, but there is no way to open or close one: ask the user to open it in Service Studio. |
+| `listApps` | An early contract 1 build ([`contracts.md`](contracts.md)). `listApps` is the same open-module list plus reference rows (see below the table), with rows under `apps` instead of `modules`. When its rows carry `tabId`, address modules as below. When they don't, address them by `name`. There is no way to search or open a module: ask the user to open it in Service Studio. |
 
 The server's own instructions say the same: where guidance says `listApps` for the
 open modules, call `listOpenModules`.
+
+**Reference rows**: on a contract 1 build, `listOpenModules` and `listApps` can also return rows
+with `isReference: true`. They are other modules Service Studio has loaded, not the open module's
+references: don't use them.
 
 ## Choosing `eSpaceName`
 
@@ -44,8 +48,6 @@ When nothing matches, the call fails with **`MODULE_NOT_LOADED`**: `No open modu
 '<value>'. Call listOpenModules and pass the tabId, key or name of a row with isOpen: true.
 If the module isn't open, find it with searchApps and open it with openModule.`
 
-Reference rows (`isReference: true`) are never accepted as `eSpaceName`.
-
 A `tabId` names the module **in that tab**. Once the tab holds another module, or is closed,
 it stops matching. When the user may have closed or reopened modules since you last listed
 them, call `listOpenModules` again before you reuse a `tabId`.
@@ -59,17 +61,15 @@ them, call `listOpenModules` again before you reuse a `tabId`.
   "modules": [
     {
       "key": "9803f00d-…",        // the module's own key, stable across reopens
-      "tabId": "…",               // open rows only: the Studio tab it is open in
-      "isSelected": true,         // open rows only: the tab in front of its Studio window
+      "tabId": "…",               // the Studio tab it is open in
+      "isSelected": true,         // the tab in front of its Studio window
       "name": "FloorPlan",
       "kind": "eSpace",
       "version": "…",
       "description": "…",
       "isOpen": true,
-      "isReference": false,
       "moduleType": "Traditional" // see module-style-support.md
-    },
-    { "key": "…", "name": "OutSystemsUI", "kind": "eSpace", "version": "…", "isOpen": false, "isReference": true, "moduleType": "ReactiveLibrary" }
+    }
   ]
 }
 ```
@@ -79,8 +79,6 @@ them, call `listOpenModules` again before you reuse a `tabId`.
 - **`isSelected`** marks the module the developer is looking at in each Studio window. Use it
   to resolve "this module" or "the module I have open". With several Studio windows,
   several rows can have it. Then ask the user which one.
-- **Reference rows** list the loaded references of the open modules, without `tabId` or
-  `isSelected`. Identical rows are listed once, and a module that is also open is listed only as open.
 - **The list doesn't say which environment a module came from.** Modules open from two
   environments appear in one list. `searchApps` marks only the tabs connected to the
   environment it lists (below).
