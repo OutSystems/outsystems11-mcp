@@ -157,7 +157,7 @@ Service Studio's MCP server has a **contract number**, which goes up whenever th
 | MCP contract | First Service Studio version |
 | --- | --- |
 | 1 | 11.55.91 |
-| 2 | The next Service Studio release (version added once it ships) |
+| 2 | 11.55.99 |
 
 Your Service Studio's MCP server names its contract when your agent connects. One that names none speaks contract 1.
 
