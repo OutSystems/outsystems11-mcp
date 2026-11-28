@@ -218,7 +218,7 @@ server code, 2026-11-20):
 |---|---|
 | `Service Studio is busy — …` | Ask the user to close any open dialog, then merge the same path again. |
 | `Sign in to an environment in Service Studio …` | Ask the user to sign in, then merge the same path again. |
-| `The merge was cancelled in the Compare and Merge window.` | The user turned it down. Ask them how to proceed, and don't merge again on your own. |
+| `The merge was cancelled in the Compare and Merge window.` | The user turned it down. Ask them how to proceed, and don't merge again on your own. The rejected change stays in the working copy, so the next merge proposes it again unless you undo it or start a new session ([`../SKILL.md`](../SKILL.md) § 3.1). |
 | `The merge could not auto-resolve every change, so nothing was merged.` | An automatic merge hit conflicts. Tell the user and ask them how to proceed. |
 | `The merge failed. See the log for details.` | Don't retry the same file. Follow the recovery in [`../SKILL.md`](../SKILL.md) § 3.1. |
 

@@ -167,6 +167,7 @@ last merge returned `merged: true`, or to discard the changes, call `endOmlEditS
 (`input: { eSpaceName }`).
 
 - **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `endOmlEditSession` and `startOmlEditSession` again, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: contract 1 builds can reject the whole merge (`servicestudio-mcp-oml/reference/contracts.md`). Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
+- **Cancelled merge, or `omlMerge` aborted by a client timeout**: ask the user what they chose before anything else. Don't re-call `omlMerge` and don't apply a variant on your own. A cancelled edit stays in the working copy, so the next merge proposes it again; undo it or start a new session. After an aborted call the user may still accept the merge in Service Studio (SKILL.md § 3.1).
 - **`omlRefreshReferences`** (`input: { eSpaceName }`, plus the token) refreshes all
   references like Manage Dependencies → Refresh All. **Call it outside an edit
   session**: inside one it ends a session with unmerged edits, or leaves the working

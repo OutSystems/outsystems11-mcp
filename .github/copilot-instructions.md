@@ -96,6 +96,7 @@ condensed restatement; `SKILL.md` wins if they ever disagree.
   Studio's Compare-and-Merge window, then `endOmlEditSession`. Skip the merge only for
   read-only tasks or when nothing saved.
 - **`merged: false` ("The merge failed. See the log for details.")**: the reason is only in a Service Studio dialog. Ask the user what it says, `endOmlEditSession` and `startOmlEditSession` again, re-apply without the cause, and merge the new path. Never set `Theme.IconLibrary`: contract 1 builds can reject the whole merge (`servicestudio-mcp-oml/reference/contracts.md`). Editing the theme stylesheet is fine, and the sidecar's `InvalidIconLibrary` error it causes is expected; merge anyway (SKILL.md § 3.1).
+- **Cancelled merge, or `omlMerge` aborted by a client timeout**: ask the user what they chose before anything else. Don't re-call `omlMerge` and don't apply a variant on your own. A cancelled edit stays in the working copy, so the next merge proposes it again; undo it or start a new session. After an aborted call the user may still accept the merge in Service Studio (SKILL.md § 3.1).
 - **Call `omlRefreshReferences` outside an edit session** — inside one it ends a
   session with unmerged edits, or leaves the working copy without the refreshed
   references (SKILL.md § 3.2). **`omlPublish` only when
