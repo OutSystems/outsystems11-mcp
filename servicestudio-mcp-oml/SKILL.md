@@ -587,10 +587,37 @@ session and start a new one before you continue.
 
 Nothing is lost when a merge doesn't succeed: the working copy still holds your
 edits. Merge the same path again only after a passing refusal, such as Studio being
-busy. If the user cancelled the merge, ask them how to proceed. If you fix the cause
-with another apply, merge the new `mutatedOmlPath`. See
+busy. If you fix the cause with another apply, merge the new `mutatedOmlPath`. See
 [`reference/mcp-session-pointer.md`](reference/mcp-session-pointer.md) for each
 `message`, and the failed-merge recovery below.
+
+> **A cancelled merge is the user's decision, and the cancelled edit is still in the
+> working copy.** `merged: false` with *"The merge was cancelled in the Compare and
+> Merge window."* means the user pressed Cancel. Don't merge the same path again, and
+> don't apply a variant before asking what they want changed: in testing (2026-11-15),
+> two cancelled merges in a row meant the user disagreed with the *content* (a fix that
+> silenced a warning but broke runtime behaviour, then a colour the agent picked on
+> its own). The next apply builds on the working copy, so the change they rejected
+> comes back in your next merge. Either undo it explicitly in that lambda, or, if
+> nothing else in the working copy needs keeping, `endOmlEditSession` and start a new
+> session to work from the live module.
+
+> **`omlMerge` can outlive the client's tool timeout.** The call blocks while the
+> Compare-and-Merge window is open, and an MCP client can abort a call that is silent
+> for too long. Claude Code aborted one after 300 s (*"sent no response or progress
+> for 300s; aborting"*), and the user accepted the merge in Service Studio afterwards
+> (observed 2026-11-15). An aborted call gives you **no result**, so:
+>
+> 1. **Don't re-call `omlMerge`.** The window may still be open, and if the first
+>    merge went through, the file is gone and a repeat tells you nothing.
+> 2. Ask the user whether the window is still open and what they chose.
+> 3. If they accepted it, `endOmlEditSession` (expect `discardedChanges: false`),
+>    `startOmlEditSession`, and probe the values you changed on the live module. If
+>    they cancelled or closed it, treat it as a cancelled merge (above): the working
+>    copy still holds your edits, so don't end the session.
+>
+> Before a merge that the user will review, tell them to look for the
+> Compare-and-Merge window, so a slow review doesn't hit the client's timeout.
 
 > **After an automatic merge, an open flow canvas does not redraw** (verified
 > 2026-10-17). The model is updated — the properties panel and expression editor show
@@ -973,6 +1000,9 @@ Quick checklist (each already covered in detail above):
 - Retrying `omlMerge` after `merged:false` without asking what Service Studio's
   dialog said, or setting `Theme.IconLibrary`, which can make contract 1
   builds reject the merge (§ 3.1).
+- Re-calling `omlMerge` after the client aborted it on a timeout, or applying a
+  variant after a cancelled merge without asking the user first. The cancelled edit
+  is still in the working copy, so the next merge proposes it again (§ 3.1).
 - Using an ambiguous short name. `IStartNode`, `IEndNode`, `IScreenAction`,
   `IScreenAggregate` and `IDataAction` each exist in more than one imported
   namespace. Write them in full:
